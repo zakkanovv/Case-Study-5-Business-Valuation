@@ -1,0 +1,2771 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кейс 02 · Текущая стоимость</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root, html[data-theme="light"]{
+  --bg:#faf8f4; --bg-alt:#f3efe7; --surface:#ffffff; --surface-2:#fbfaf6;
+  --text:#161512; --text-2:#3d3b34; --muted:#79756b; --muted-2:#a8a49a;
+  --border:#e8e3d9; --border-2:#d6d0c2;
+  --accent:#047857; --accent-2:#059669; --accent-dark:#065f46;
+  --accent-soft:#e9f7f0; --accent-soft-2:#c8ebdb;
+  --gold:#b45309; --gold-soft:#fdf3e3;
+  --danger:#b91c1c; --success:#047857;
+  --shadow-xs:0 1px 0 rgba(22,21,18,.02);
+  --shadow-sm:0 1px 2px rgba(22,21,18,.04), 0 6px 20px -14px rgba(22,21,18,.22);
+  --shadow:0 2px 4px rgba(22,21,18,.04), 0 20px 40px -22px rgba(22,21,18,.28);
+  --shadow-lg:0 30px 70px -40px rgba(22,21,18,.42);
+  --code-bg:#f4f1ea;
+  --hero-bg:linear-gradient(160deg,#0f1a15 0%, #0a1410 55%, #14261d 100%);
+  --tooltip-bg:#161512; --tooltip-text:#f7f4ed;
+  --chart-grid:#efeae0; --chart-grid-soft:#f5f2ea;
+}
+html[data-theme="dark"]{
+  --bg:#0b0b0a; --bg-alt:#100f0d; --surface:#151412; --surface-2:#1a1917;
+  --text:#f4f1ea; --text-2:#d3cfc4; --muted:#a19c8f; --muted-2:#6e6a5f;
+  --border:#252320; --border-2:#33302a;
+  --accent:#10b981; --accent-2:#34d399; --accent-dark:#059669;
+  --accent-soft:#0b2d22; --accent-soft-2:#14463a;
+  --gold:#f59e0b; --gold-soft:#2e1e08;
+  --danger:#ef4444;
+  --shadow-xs:0 1px 0 rgba(0,0,0,.2);
+  --shadow-sm:0 1px 2px rgba(0,0,0,.4), 0 6px 20px -14px rgba(0,0,0,.6);
+  --shadow:0 2px 4px rgba(0,0,0,.4), 0 20px 40px -22px rgba(0,0,0,.7);
+  --shadow-lg:0 30px 70px -40px rgba(0,0,0,.9);
+  --code-bg:#100f0d;
+  --hero-bg:linear-gradient(160deg,#0e1e18 0%, #071410 55%, #163024 100%);
+  --tooltip-bg:#f4f1ea; --tooltip-text:#161512;
+  --chart-grid:#232019; --chart-grid-soft:#1a1917;
+}
+*{box-sizing:border-box;}
+html{scroll-behavior:smooth;scroll-padding-top:24px;-webkit-text-size-adjust:100%;}
+body{margin:0;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  font-size:16px;line-height:1.65;color:var(--text);background:var(--bg);overflow-x:hidden;
+  -webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;
+  transition:background .35s ease, color .35s ease;}
+body.locked{overflow:hidden;}
+h1,h2,h3,h4{margin:0;line-height:1.15;}
+p{margin:0;} a{color:inherit;text-decoration:none;}
+button{font-family:inherit;} input,select,textarea{font-family:inherit;}
+.serif{font-family:"Instrument Serif",Georgia,serif;font-weight:400;letter-spacing:-0.005em;}
+.mono{font-family:"JetBrains Mono","SF Mono",ui-monospace,Menlo,Consolas,monospace;
+  font-variant-numeric:tabular-nums;font-feature-settings:"tnum","zero";}
+.eyebrow{display:inline-block;font-size:11.5px;font-weight:700;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--muted-2);}
+.container{width:100%;max-width:1000px;margin:0 auto;padding:0 40px;}
+#progressBar{position:fixed;top:0;left:0;height:2px;width:0%;background:var(--accent);
+  z-index:500;transition:width .1s linear;opacity:0;}
+body.ready #progressBar{opacity:1;}
+
+/* ================= COVER ================= */
+.cover{position:fixed;inset:0;z-index:200;display:flex;align-items:center;justify-content:center;
+  padding:60px 32px;overflow-y:auto;cursor:pointer;
+  background:radial-gradient(1000px 700px at 15% 20%, var(--accent-soft) 0%, transparent 55%),
+    radial-gradient(800px 600px at 90% 90%, var(--gold-soft) 0%, transparent 60%),var(--bg);
+  transition:opacity .6s cubic-bezier(.4,0,.2,1), transform .6s cubic-bezier(.4,0,.2,1), filter .6s ease;}
+.cover.leaving{opacity:0;transform:scale(1.03);filter:blur(5px);pointer-events:none;}
+.cover-grid{display:grid;grid-template-columns:1.15fr .85fr;gap:64px;align-items:center;
+  max-width:1180px;width:100%;animation:coverIn 1s cubic-bezier(.16,1,.3,1) both;}
+@keyframes coverIn{from{opacity:0;transform:translateY(30px);}to{opacity:1;transform:translateY(0);}}
+.cover-left{text-align:left;}
+.cover-topbar{display:flex;align-items:center;gap:16px;margin-bottom:44px;}
+.cover-number{font-family:"Instrument Serif",serif;font-size:14px;font-style:italic;
+  color:var(--accent);letter-spacing:.02em;}
+.cover-sep{width:32px;height:1px;background:var(--border-2);}
+.cover h1{font-family:"Instrument Serif",Georgia,serif;font-weight:400;
+  font-size:clamp(52px,8.4vw,108px);line-height:.98;letter-spacing:-0.028em;
+  margin-bottom:28px;color:var(--text);}
+.cover h1 em{font-style:italic;color:var(--accent);}
+.cover-sub{font-size:clamp(16px,1.9vw,19px);color:var(--text-2);max-width:520px;
+  margin-bottom:44px;line-height:1.6;}
+.cover-cta{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
+.cover-hint{font-size:13.5px;color:var(--muted-2);font-family:"JetBrains Mono",monospace;}
+.cover-hint::before{content:"·";margin-right:8px;color:var(--accent);}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;border:none;cursor:pointer;
+  background:var(--text);color:var(--bg);font-size:15px;font-weight:600;
+  padding:15px 28px;border-radius:12px;
+  transition:transform .25s cubic-bezier(.34,1.4,.64,1), background .25s ease;}
+.btn-primary:hover{transform:translateY(-2px);background:var(--accent);color:#fff;}
+.btn-primary::after{content:"→";font-size:16px;transition:transform .25s ease;}
+.btn-primary:hover::after{transform:translateX(3px);}
+.cover-right{position:relative;padding:8px;}
+.cover-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;
+  padding:32px 32px 28px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.cover-card::before{content:"";position:absolute;inset:auto -20% -40% auto;width:340px;height:340px;
+  background:radial-gradient(closest-side, var(--accent-soft) 0%, transparent 70%);
+  opacity:.8;pointer-events:none;}
+.cover-card-label{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted-2);margin-bottom:20px;}
+.cover-row{display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:14px 0;border-bottom:1px dashed var(--border);position:relative;}
+.cover-row:last-of-type{border-bottom:none;}
+.cover-row-k{font-size:13.5px;color:var(--muted);font-weight:500;}
+.cover-row-v{font-family:"JetBrains Mono",monospace;font-size:15px;font-weight:500;color:var(--text);}
+.cover-arrow{display:flex;align-items:center;justify-content:center;margin:12px 0 4px;color:var(--accent);}
+.cover-arrow svg{width:100%;max-width:220px;height:auto;}
+.cover-big{margin-top:16px;padding-top:20px;border-top:1px solid var(--border);text-align:right;}
+.cover-big-label{font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:6px;}
+.cover-big-value{font-family:"JetBrains Mono",monospace;font-size:clamp(28px,4vw,42px);
+  font-weight:700;color:var(--text);letter-spacing:-0.03em;line-height:1;}
+@media (max-width:880px){
+  .cover-grid{grid-template-columns:1fr;gap:36px;}
+  .cover h1{font-size:clamp(44px,12vw,72px);}
+  .cover-right{max-width:520px;margin:0 auto;width:100%;}
+}
+
+/* ================= APP LAYOUT (SIDEBAR + CONTENT) ================= */
+#app{opacity:0;transition:opacity .7s ease;}
+#app.entering{opacity:1;}
+
+.layout{
+  display:grid;
+  grid-template-columns:272px 1fr;
+  min-height:100vh;
+}
+
+/* ================= SIDEBAR ================= */
+.sidebar{
+  position:sticky;
+  top:0;
+  height:100vh;
+  background:var(--bg-alt);
+  border-right:1px solid var(--border);
+  padding:28px 20px 24px;
+  display:flex;
+  flex-direction:column;
+  overflow-y:auto;
+  scrollbar-width:thin;
+  scrollbar-color:var(--border) transparent;
+}
+.sidebar::-webkit-scrollbar{width:6px;}
+.sidebar::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+
+.sidebar-brand{
+  display:flex;
+  align-items:baseline;
+  gap:6px;
+  padding:0 8px 22px;
+  border-bottom:1px solid var(--border);
+  margin-bottom:20px;
+  font-family:"Instrument Serif",serif;
+  font-size:24px;
+  letter-spacing:-0.01em;
+  flex-shrink:0;
+}
+.sidebar-brand em{font-style:italic;color:var(--accent);font-size:14px;}
+
+.sidebar-label{
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  color:var(--muted-2);
+  padding:0 12px;
+  margin-bottom:10px;
+  flex-shrink:0;
+}
+
+.sidebar-nav{
+  display:flex;
+  flex-direction:column;
+  gap:1px;
+  flex:1;
+}
+
+.nav-link{
+  display:grid;
+  grid-template-columns:32px 1fr;
+  gap:10px;
+  align-items:center;
+  padding:9px 12px 9px 8px;
+  border-radius:9px;
+  font-size:13.5px;
+  font-weight:500;
+  color:var(--muted);
+  cursor:pointer;
+  transition:background .18s ease, color .18s ease;
+  position:relative;
+  white-space:nowrap;
+  overflow:hidden;
+}
+.nav-link .nav-num{
+  font-family:"JetBrains Mono",monospace;
+  font-size:10.5px;
+  font-weight:500;
+  color:var(--muted-2);
+  letter-spacing:.02em;
+  text-align:right;
+  transition:color .18s ease;
+}
+.nav-link:hover{
+  background:var(--surface);
+  color:var(--text);
+}
+.nav-link:hover .nav-num{color:var(--accent);}
+.nav-link.active{
+  background:var(--surface);
+  color:var(--text);
+  font-weight:600;
+  box-shadow:var(--shadow-xs);
+}
+.nav-link.active::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:20%;
+  bottom:20%;
+  width:3px;
+  border-radius:0 3px 3px 0;
+  background:var(--accent);
+}
+.nav-link.active .nav-num{color:var(--accent);font-weight:700;}
+
+.sidebar-footer{
+  padding-top:18px;
+  margin-top:18px;
+  border-top:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  flex-shrink:0;
+}
+.sidebar-footer .theme-label{
+  font-size:12.5px;
+  color:var(--muted);
+  font-weight:500;
+}
+.icon-btn{width:34px;height:34px;border-radius:9px;border:1px solid var(--border);
+  background:var(--surface);color:var(--text-2);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:all .2s ease;font-size:14px;}
+.icon-btn:hover{border-color:var(--border-2);background:var(--surface-2);}
+.icon-btn .sun{display:none;}
+html[data-theme="dark"] .icon-btn .sun{display:inline;}
+html[data-theme="dark"] .icon-btn .moon{display:none;}
+
+/* Mobile menu toggle */
+.menu-toggle{
+  display:none;
+  position:fixed;
+  top:14px;left:14px;
+  width:44px;height:44px;
+  border-radius:12px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  cursor:pointer;
+  z-index:220;
+  align-items:center;
+  justify-content:center;
+  box-shadow:var(--shadow-sm);
+  font-size:18px;
+  transition:all .2s ease;
+}
+.menu-toggle:hover{background:var(--surface-2);}
+.sidebar-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.5);
+  z-index:210;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .3s ease;
+}
+.sidebar-overlay.show{opacity:1;pointer-events:auto;}
+
+/* ================= CONTENT ================= */
+.content{
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.kpi-strip{border-bottom:1px solid var(--border);background:var(--bg-alt);}
+.kpi-inner{width:100%;max-width:1000px;margin:0 auto;padding:0 40px;
+  display:grid;grid-template-columns:repeat(5,1fr);gap:0;}
+.kpi-item{padding:18px 24px 18px 0;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;}
+.kpi-item:last-child{border-right:none;padding-right:0;}
+.kpi-item:first-child{padding-left:0;}
+.kpi-label{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted-2);}
+.kpi-value{font-family:"JetBrains Mono",monospace;font-size:16px;font-weight:500;
+  color:var(--text);letter-spacing:-0.01em;}
+.kpi-value.accent{color:var(--accent);}
+
+/* ================= SECTIONS ================= */
+.section{padding:80px 0;scroll-margin-top:24px;border-bottom:1px solid var(--border);}
+.section:last-of-type{border-bottom:none;}
+.section-head{display:grid;grid-template-columns:72px 1fr;gap:24px;
+  align-items:baseline;margin-bottom:40px;max-width:860px;}
+.section-num{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:15px;
+  color:var(--accent);letter-spacing:.02em;padding-top:6px;}
+.section-head h2{font-family:"Instrument Serif",Georgia,serif;font-weight:400;
+  font-size:clamp(30px,4.4vw,46px);line-height:1.08;letter-spacing:-0.022em;
+  color:var(--text);margin-bottom:8px;}
+.section-sub{font-size:15.5px;color:var(--muted);max-width:640px;}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;}
+.card.plain{background:var(--surface-2);border:1px dashed var(--border);}
+.card.warm{background:linear-gradient(150deg,var(--surface),var(--accent-soft));
+  border-color:var(--accent-soft-2);}
+.grid{display:grid;gap:18px;}
+.grid-2{grid-template-columns:repeat(2,1fr);}
+.grid-3{grid-template-columns:repeat(3,1fr);}
+.grid-4{grid-template-columns:repeat(4,1fr);}
+
+.term{border-bottom:1px dotted var(--accent);cursor:help;position:relative;
+  font-weight:600;color:var(--accent);}
+.term::after{content:attr(data-tip);position:absolute;left:50%;bottom:calc(100% + 10px);
+  transform:translateX(-50%) translateY(4px);background:var(--tooltip-bg);color:var(--tooltip-text);
+  font-size:12.5px;font-weight:500;line-height:1.5;padding:10px 14px;border-radius:10px;
+  width:max-content;max-width:260px;text-align:left;opacity:0;pointer-events:none;
+  transition:opacity .2s, transform .2s;z-index:50;
+  box-shadow:0 12px 30px -12px rgba(0,0,0,.35);letter-spacing:0;}
+.term:hover::after{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.stat-card{display:flex;flex-direction:column;gap:8px;background:var(--surface);
+  border:1px solid var(--border);border-radius:16px;padding:22px;
+  transition:transform .3s cubic-bezier(.34,1.3,.64,1), border-color .3s ease;}
+.stat-card:hover{transform:translateY(-4px);border-color:var(--border-2);}
+.stat-label{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted-2);}
+.stat-value{font-family:"JetBrains Mono",monospace;font-size:17px;font-weight:500;
+  color:var(--text);letter-spacing:-0.01em;}
+.stat-value.accent{color:var(--accent);}
+
+.steps{display:flex;flex-direction:column;gap:12px;}
+.step{display:grid;grid-template-columns:56px 1fr;gap:22px;padding:24px 26px;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  transition:border-color .25s ease;}
+.step:hover{border-color:var(--border-2);}
+.step-num{font-family:"Instrument Serif",serif;font-style:italic;font-size:30px;
+  color:var(--muted-2);line-height:1;letter-spacing:-0.02em;}
+.step-title{font-size:15.5px;font-weight:700;margin-bottom:12px;color:var(--text);}
+.step-code{font-family:"JetBrains Mono",monospace;font-size:14.5px;background:var(--code-bg);
+  border:1px solid var(--border);border-radius:9px;padding:12px 14px;color:var(--text);
+  overflow-x:auto;white-space:nowrap;letter-spacing:-0.01em;font-variant-numeric:tabular-nums;}
+.step-code + .step-code{margin-top:6px;}
+.step-hint{font-size:13.5px;color:var(--muted);margin-top:10px;}
+.hl{color:var(--accent);font-weight:600;}
+
+.solution-toggle{display:flex;align-items:center;gap:10px;margin-bottom:22px;}
+.switch{position:relative;width:38px;height:22px;background:var(--border-2);
+  border-radius:999px;cursor:pointer;transition:background .2s ease;flex-shrink:0;}
+.switch::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;
+  background:var(--surface);border-radius:50%;
+  transition:transform .22s cubic-bezier(.34,1.4,.64,1);
+  box-shadow:0 1px 3px rgba(0,0,0,.15);}
+.switch.on{background:var(--accent);}
+.switch.on::after{transform:translateX(16px);}
+.switch-label{font-size:13.5px;color:var(--text-2);font-weight:500;
+  user-select:none;cursor:pointer;}
+.hidden-solution{position:relative;}
+.hidden-solution .mask{display:none;}
+.hidden-solution.hidden .real{filter:blur(7px);user-select:none;
+  pointer-events:none;opacity:.35;}
+.hidden-solution.hidden .mask{display:block;position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13.5px;color:var(--muted);font-weight:500;
+  background:linear-gradient(180deg,transparent 0%, var(--surface) 65%);border-radius:14px;}
+
+.formula-hero{background:var(--hero-bg);color:#f4f1ea;border-radius:20px;
+  padding:60px 32px;text-align:center;box-shadow:var(--shadow-lg);
+  position:relative;overflow:hidden;}
+.formula-hero::before{content:"";position:absolute;inset:-40% -10% auto -10%;height:80%;
+  background:radial-gradient(closest-side, rgba(16,185,129,.4), transparent);pointer-events:none;}
+.formula{position:relative;font-family:"Instrument Serif",Georgia,serif;
+  font-size:clamp(34px,6.4vw,58px);font-weight:400;letter-spacing:-0.02em;line-height:1.1;}
+.formula .fvar{color:#6ee7b7;font-style:italic;}
+.formula .fop{color:#78716c;margin:0 6px;}
+.formula sup{font-size:.55em;}
+.legend{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px;}
+.legend-item{background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:18px 16px;text-align:left;}
+.legend-sym{font-family:"Instrument Serif",serif;font-style:italic;font-size:22px;
+  color:var(--accent);margin-bottom:6px;line-height:1;}
+.legend-desc{font-size:13.5px;color:var(--muted);line-height:1.5;}
+
+.result-hero{background:var(--hero-bg);border-radius:22px;
+  padding:clamp(40px,6vw,72px) clamp(28px,5vw,64px);color:#f4f1ea;
+  position:relative;overflow:hidden;box-shadow:var(--shadow-lg);}
+.result-hero::after{content:"";position:absolute;width:600px;height:600px;
+  right:-200px;top:-260px;
+  background:radial-gradient(closest-side, rgba(16,185,129,.35), transparent);pointer-events:none;}
+.result-eyebrow{font-size:11.5px;font-weight:700;letter-spacing:.22em;
+  text-transform:uppercase;color:#6ee7b7;margin-bottom:22px;position:relative;}
+.result-big{font-family:"Instrument Serif",Georgia,serif;font-weight:400;
+  font-size:clamp(56px,12vw,128px);line-height:.95;letter-spacing:-0.035em;
+  color:#f4f1ea;margin-bottom:24px;position:relative;display:flex;
+  align-items:baseline;gap:12px;flex-wrap:wrap;}
+.result-big em{font-style:italic;color:#6ee7b7;}
+.result-big .unit{font-size:.32em;font-family:"Inter",sans-serif;font-weight:500;
+  color:#a8a29e;letter-spacing:0;}
+.result-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:36px;
+  padding-top:32px;border-top:1px solid rgba(244,241,234,.14);position:relative;}
+.result-meta-item{padding:0 20px 0 0;border-right:1px solid rgba(244,241,234,.14);}
+.result-meta-item:last-child{border-right:none;padding-right:0;}
+.result-meta-k{font-size:10.5px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:#78716c;margin-bottom:6px;}
+.result-meta-v{font-family:"JetBrains Mono",monospace;font-size:15.5px;
+  color:#f4f1ea;font-weight:500;}
+
+.note{padding:18px 22px;border-radius:12px;font-size:15px;line-height:1.6;border:1px solid;}
+.note.accent{background:var(--accent-soft);border-color:var(--accent-soft-2);color:var(--text-2);}
+.note.gold{background:var(--gold-soft);
+  border-color:color-mix(in srgb, var(--gold) 30%, transparent);
+  color:var(--text-2);border-left:3px solid var(--gold);}
+.note strong{color:var(--text);font-weight:700;}
+
+.segmented-lg{display:inline-flex;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:11px;padding:4px;gap:3px;}
+.segmented-lg button{padding:8px 16px;border:none;background:transparent;color:var(--muted);
+  font-weight:600;font-size:13px;letter-spacing:.01em;border-radius:8px;cursor:pointer;
+  transition:all .2s ease;white-space:nowrap;}
+.segmented-lg button:hover{color:var(--text);}
+.segmented-lg button.active{background:var(--surface);color:var(--text);
+  box-shadow:var(--shadow-xs);}
+
+.calc-tabs{display:flex;gap:4px;padding:4px;background:var(--surface-2);
+  border:1px solid var(--border);border-radius:12px;margin-bottom:26px;
+  overflow-x:auto;scrollbar-width:none;}
+.calc-tabs::-webkit-scrollbar{display:none;}
+.calc-tab{flex:1;min-width:130px;padding:11px 16px;border:none;background:transparent;
+  color:var(--muted);font-weight:600;font-size:13.5px;cursor:pointer;
+  border-radius:8px;transition:all .2s ease;white-space:nowrap;}
+.calc-tab:hover{color:var(--text);}
+.calc-tab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow-xs);}
+.calc-grid{display:grid;grid-template-columns:1.05fr 1fr;gap:22px;align-items:start;}
+.field{margin-bottom:20px;}
+.field label{display:flex;justify-content:space-between;align-items:baseline;gap:8px;
+  font-size:12.5px;font-weight:600;color:var(--text-2);margin-bottom:8px;}
+.field label .fv{font-family:"JetBrains Mono",monospace;font-size:13px;
+  color:var(--accent);font-weight:500;}
+.field input[type="number"]{width:100%;font-family:"JetBrains Mono",monospace;
+  font-size:15px;font-weight:500;padding:13px 15px;border-radius:10px;
+  border:1px solid var(--border);background:var(--surface-2);color:var(--text);
+  transition:border-color .2s, box-shadow .2s, background .2s;
+  font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
+.field input[type="number"]:focus{outline:none;border-color:var(--accent);
+  background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft);}
+.field input[type="range"]{width:100%;height:5px;-webkit-appearance:none;appearance:none;
+  background:linear-gradient(90deg,var(--accent) 0%,var(--accent) var(--fill,50%),
+    var(--border) var(--fill,50%),var(--border) 100%);
+  border-radius:999px;outline:none;margin-top:10px;cursor:pointer;}
+.field input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;
+  width:18px;height:18px;border-radius:50%;background:var(--surface);
+  border:2.5px solid var(--accent);
+  box-shadow:0 2px 6px rgba(4,120,87,.25);cursor:pointer;
+  transition:transform .15s;}
+.field input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.18);}
+.field input[type="range"]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;
+  background:var(--surface);border:2.5px solid var(--accent);cursor:pointer;}
+.calc-actions{display:flex;gap:10px;margin-top:26px;flex-wrap:wrap;}
+.btn-solid{flex:1;min-width:170px;border:none;cursor:pointer;background:var(--text);
+  color:var(--bg);font-size:14.5px;font-weight:600;padding:14px 22px;
+  border-radius:11px;transition:background .2s, transform .2s;}
+.btn-solid:hover{background:var(--accent);color:#fff;transform:translateY(-1px);}
+.btn-outline{border:1px solid var(--border);background:var(--surface);
+  color:var(--text-2);font-size:14.5px;font-weight:600;padding:14px 20px;
+  border-radius:11px;cursor:pointer;transition:all .2s;}
+.btn-outline:hover{border-color:var(--border-2);background:var(--surface-2);
+  color:var(--text);}
+.calc-error{display:none;margin-top:14px;
+  background:color-mix(in srgb, var(--danger) 8%, var(--surface));
+  border:1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  color:var(--danger);border-radius:10px;padding:12px 14px;font-size:13.5px;font-weight:500;}
+.calc-error.show{display:block;}
+.calc-hint{display:none;margin-top:10px;padding:10px 14px;background:var(--gold-soft);
+  border:1px solid color-mix(in srgb, var(--gold) 25%, transparent);
+  color:var(--gold);font-size:13px;border-radius:9px;}
+.calc-hint.show{display:block;}
+.calc-output{background:var(--surface-2);border:1px solid var(--border);
+  border-radius:16px;padding:32px 28px;min-height:100%;display:flex;flex-direction:column;}
+.calc-output-label{font-size:11px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+.calc-output-value{font-family:"Instrument Serif",Georgia,serif;
+  font-size:clamp(38px,6vw,64px);font-weight:400;letter-spacing:-0.03em;line-height:1;
+  color:var(--text);transition:transform .3s cubic-bezier(.34,1.4,.64,1);
+  word-break:break-word;}
+.calc-output-value em{font-style:italic;color:var(--accent);}
+.calc-output-value.pop{transform:scale(1.04);}
+.calc-output-sub{font-family:"JetBrains Mono",monospace;font-size:13.5px;
+  color:var(--muted);margin-top:10px;letter-spacing:-0.01em;}
+.calc-meta{margin-top:26px;padding-top:22px;border-top:1px dashed var(--border);
+  display:flex;flex-direction:column;gap:10px;font-size:13.5px;}
+.calc-meta-row{display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap;
+  color:var(--muted);}
+.calc-meta-row b{color:var(--text);font-weight:500;font-family:"JetBrains Mono",monospace;
+  font-variant-numeric:tabular-nums;text-align:right;word-break:break-all;}
+.calc-tools{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap;}
+.tool-btn{border:1px solid var(--border);background:var(--surface);color:var(--text-2);
+  font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:9px;cursor:pointer;
+  transition:all .2s ease;display:inline-flex;align-items:center;gap:6px;}
+.tool-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-soft);}
+
+.history-list{display:flex;flex-direction:column;gap:8px;max-height:340px;
+  overflow-y:auto;padding-right:4px;}
+.history-empty{padding:24px;text-align:center;font-size:13.5px;color:var(--muted-2);
+  background:var(--surface-2);border:1px dashed var(--border);border-radius:12px;}
+.history-item{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;
+  padding:12px 16px;background:var(--surface-2);border:1px solid var(--border);
+  border-radius:10px;font-size:13px;}
+.history-params{font-family:"JetBrains Mono",monospace;color:var(--muted);font-size:12px;
+  margin-bottom:2px;}
+.history-result{font-family:"JetBrains Mono",monospace;font-weight:600;
+  color:var(--text);font-size:14px;}
+.history-remove{border:none;background:transparent;color:var(--muted-2);cursor:pointer;
+  font-size:15px;padding:4px 8px;border-radius:6px;transition:all .2s;}
+.history-remove:hover{color:var(--danger);
+  background:color-mix(in srgb, var(--danger) 10%, transparent);}
+
+.table-wrap{border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  background:var(--surface);}
+table{width:100%;border-collapse:collapse;min-width:400px;}
+thead th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--muted-2);padding:14px 20px;
+  background:var(--surface-2);border-bottom:1px solid var(--border);}
+tbody td{padding:14px 20px;font-size:14.5px;font-weight:500;
+  border-bottom:1px solid var(--border);font-family:"JetBrains Mono",monospace;
+  color:var(--text);font-variant-numeric:tabular-nums;letter-spacing:-0.01em;}
+tbody tr:last-child td{border-bottom:none;}
+tbody tr:hover{background:var(--surface-2);}
+tbody tr.highlight{background:var(--accent-soft);}
+tbody tr.highlight td{color:var(--accent-dark);font-weight:700;}
+html[data-theme="dark"] tbody tr.highlight td{color:var(--accent-2);}
+tbody tr.highlight td:first-child::after{content:"main";display:inline-block;
+  margin-left:10px;font-size:9.5px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;color:#fff;background:var(--accent);border-radius:4px;
+  padding:2px 7px;vertical-align:middle;font-family:"Inter",sans-serif;}
+
+.chart-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:24px 20px 12px;}
+.chart-legend{display:flex;gap:16px;padding:0 8px 10px;flex-wrap:wrap;
+  font-size:12px;color:var(--muted);}
+.chart-legend-item{display:inline-flex;align-items:center;gap:6px;
+  font-family:"JetBrains Mono",monospace;}
+.chart-legend-dot{width:10px;height:2.5px;border-radius:2px;}
+
+.growth-bars{display:flex;align-items:flex-end;justify-content:space-between;
+  gap:8px;height:220px;padding-bottom:34px;position:relative;}
+.growth-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-end;height:100%;position:relative;}
+.growth-bar{width:100%;max-width:52px;border-radius:6px 6px 0 0;
+  background:linear-gradient(180deg,var(--accent-2),var(--accent));
+  height:0;min-height:4px;transition:height 1.1s cubic-bezier(.16,1,.3,1);
+  transition-delay:var(--delay,0s);}
+.growth-bar.final{background:linear-gradient(180deg,var(--accent),var(--accent-dark));}
+.growth-val{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:600;
+  color:var(--text);margin-bottom:6px;opacity:0;transform:translateY(6px);
+  transition:opacity .5s ease, transform .5s ease;
+  transition-delay:calc(var(--delay,0s) + .35s);white-space:nowrap;}
+.growth-year{position:absolute;bottom:-26px;font-size:11.5px;color:var(--muted-2);
+  font-weight:600;font-family:"JetBrains Mono",monospace;white-space:nowrap;}
+.growth-visible .growth-bar{height:var(--h);}
+.growth-visible .growth-val{opacity:1;transform:translateY(0);}
+
+.info-flow{display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center;}
+.info-node{padding:28px 24px;border:1px solid var(--border);border-radius:14px;
+  background:var(--surface-2);text-align:center;transition:transform .3s, border-color .3s;}
+.info-node:hover{transform:translateY(-3px);border-color:var(--accent-soft-2);}
+.info-node.today{background:linear-gradient(150deg,var(--accent-soft),var(--surface));
+  border-color:var(--accent-soft-2);}
+.info-node .label{font-size:10.5px;font-weight:700;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--muted-2);margin-bottom:10px;}
+.info-node .value{font-family:"Instrument Serif",serif;
+  font-size:clamp(28px,4.4vw,40px);font-weight:400;letter-spacing:-0.02em;
+  color:var(--text);line-height:1;}
+.info-node.today .value{color:var(--accent);}
+.info-arrow-mid{display:flex;flex-direction:column;align-items:center;gap:6px;
+  color:var(--muted-2);font-size:12px;font-weight:600;
+  font-family:"JetBrains Mono",monospace;}
+.info-arrow-mid .g{font-size:22px;color:var(--accent);
+  animation:bounceDown 2.4s ease-in-out infinite;}
+@keyframes bounceDown{
+  0%,100%{transform:translateY(0);opacity:.6;}
+  50%{transform:translateY(6px);opacity:1;}
+}
+.diff-eq{display:inline-block;font-family:"JetBrains Mono",monospace;
+  font-size:clamp(14px,2.6vw,18px);font-weight:600;background:var(--code-bg);
+  border:1px solid var(--border);border-radius:11px;padding:14px 22px;
+  color:var(--text-2);margin:22px 0 14px;letter-spacing:-0.01em;word-break:break-word;}
+
+.conclusion-card{display:grid;grid-template-columns:auto 1fr;gap:18px;
+  align-items:flex-start;padding:22px;background:var(--surface);
+  border:1px solid var(--border);border-radius:14px;
+  transition:transform .3s, border-color .3s;}
+.conclusion-card:hover{transform:translateY(-3px);border-color:var(--accent-soft-2);}
+.conclusion-num{font-family:"Instrument Serif",serif;font-style:italic;
+  font-size:28px;color:var(--accent);line-height:1;letter-spacing:-0.02em;}
+.conclusion-text{font-size:14.5px;color:var(--text-2);line-height:1.55;}
+
+.mistake{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:20px 22px;
+  background:var(--surface);border:1px solid var(--border);
+  border-left:3px solid var(--gold);border-radius:12px;}
+.mistake-icon{width:28px;height:28px;border-radius:8px;background:var(--gold-soft);
+  color:var(--gold);display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:14px;flex-shrink:0;}
+.mistake-title{font-size:14.5px;font-weight:700;margin-bottom:4px;color:var(--text);}
+.mistake-body{font-size:13.5px;color:var(--muted);line-height:1.55;}
+
+.quiz-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:14px;padding:26px;margin-bottom:14px;}
+.quiz-q{font-size:15.5px;font-weight:600;margin-bottom:18px;color:var(--text);
+  line-height:1.5;display:flex;gap:12px;}
+.quiz-q .qnum{font-family:"Instrument Serif",serif;font-style:italic;
+  color:var(--accent);font-size:22px;line-height:1;flex-shrink:0;}
+.quiz-options{display:flex;flex-direction:column;gap:8px;}
+.quiz-option{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;
+  border:1px solid var(--border);border-radius:10px;cursor:pointer;
+  background:var(--surface-2);transition:all .18s ease;font-size:14px;
+  font-weight:500;color:var(--text-2);text-align:left;width:100%;line-height:1.5;}
+.quiz-option:hover:not(:disabled){border-color:var(--accent-soft-2);
+  background:var(--accent-soft);}
+.quiz-option .marker{flex-shrink:0;width:20px;height:20px;border-radius:5px;
+  border:1.5px solid var(--border-2);display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:700;
+  font-family:"JetBrains Mono",monospace;color:var(--muted);
+  transition:all .2s ease;margin-top:1px;}
+.quiz-option.correct{border-color:var(--success);
+  background:color-mix(in srgb, var(--success) 8%, var(--surface));color:var(--text);}
+.quiz-option.correct .marker{background:var(--success);
+  border-color:var(--success);color:#fff;}
+.quiz-option.wrong{border-color:var(--danger);
+  background:color-mix(in srgb, var(--danger) 8%, var(--surface));color:var(--text);}
+.quiz-option.wrong .marker{background:var(--danger);
+  border-color:var(--danger);color:#fff;}
+.quiz-option:disabled{cursor:default;}
+.quiz-explain{margin-top:14px;padding:13px 16px;border-radius:10px;
+  background:var(--accent-soft);border:1px solid var(--accent-soft-2);
+  font-size:13.5px;color:var(--text-2);display:none;line-height:1.55;}
+.quiz-explain.show{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
+.quiz-score{margin-top:20px;padding:20px 24px;border-radius:12px;
+  background:var(--accent-soft);border:1px solid var(--accent-soft-2);
+  text-align:center;font-size:15px;font-weight:500;color:var(--text-2);display:none;}
+.quiz-score.show{display:block;}
+.quiz-score b{color:var(--accent);font-weight:700;font-size:18px;
+  font-family:"JetBrains Mono",monospace;}
+
+.certificate{background:var(--surface);border:1px solid var(--border);
+  border-radius:16px;padding:clamp(32px,5vw,56px);text-align:center;
+  position:relative;overflow:hidden;}
+.certificate::before{content:"";position:absolute;inset:0;
+  background:radial-gradient(600px 400px at 50% 0%, var(--accent-soft) 0%, transparent 60%);
+  pointer-events:none;opacity:.6;}
+.certificate > *{position:relative;}
+.cert-eyebrow{font-size:11px;font-weight:700;letter-spacing:.24em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+.cert-title{font-family:"Instrument Serif",serif;
+  font-size:clamp(28px,4.4vw,42px);font-weight:400;letter-spacing:-0.02em;
+  margin-bottom:8px;color:var(--text);}
+.cert-sub{font-size:14.5px;color:var(--muted);margin-bottom:32px;}
+.cert-name-field{display:flex;gap:10px;max-width:460px;margin:0 auto 28px;}
+.cert-name-field input{flex:1;padding:13px 16px;border-radius:10px;
+  border:1px solid var(--border);background:var(--surface-2);color:var(--text);
+  font-size:15px;font-weight:500;text-align:center;transition:all .2s;}
+.cert-name-field input:focus{outline:none;border-color:var(--accent);
+  background:var(--surface);box-shadow:0 0 0 3px var(--accent-soft);}
+.cert-preview{border:1px dashed var(--border-2);border-radius:12px;
+  padding:28px 24px;max-width:600px;margin:0 auto;background:var(--surface-2);}
+.cert-preview-name{font-family:"Instrument Serif",serif;font-size:32px;
+  font-style:italic;color:var(--text);margin:12px 0;min-height:42px;}
+.cert-preview-line{height:1px;background:var(--border);margin:20px auto;max-width:320px;}
+.cert-preview-text{font-size:14px;color:var(--text-2);line-height:1.6;
+  max-width:420px;margin:0 auto;}
+.cert-preview-meta{display:flex;justify-content:center;gap:32px;margin-top:22px;
+  font-size:12.5px;font-family:"JetBrains Mono",monospace;color:var(--muted);
+  flex-wrap:wrap;}
+
+.lit-item{display:grid;grid-template-columns:auto 1fr;gap:18px;
+  padding:18px 0;border-bottom:1px solid var(--border);}
+.lit-item:last-child{border-bottom:none;}
+.lit-num{font-family:"Instrument Serif",serif;font-style:italic;
+  font-size:18px;color:var(--accent);line-height:1.3;}
+.lit-title{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px;}
+.lit-meta{font-size:13px;color:var(--muted);line-height:1.55;}
+
+.final-block{background:var(--hero-bg);color:#f4f1ea;border-radius:22px;
+  padding:clamp(40px,6vw,72px) clamp(28px,5vw,64px);
+  position:relative;overflow:hidden;}
+.final-block::after{content:"";position:absolute;inset:auto -200px -300px auto;
+  width:600px;height:600px;
+  background:radial-gradient(closest-side, rgba(16,185,129,.35), transparent);
+  pointer-events:none;}
+.final-block > *{position:relative;}
+.final-block h2{font-family:"Instrument Serif",serif;font-weight:400;
+  font-size:clamp(32px,5vw,52px);letter-spacing:-0.025em;margin-bottom:20px;
+  color:#f4f1ea;}
+.final-block h2 em{font-style:italic;color:#6ee7b7;}
+.final-block p{font-size:17px;line-height:1.7;color:#d6d3cd;
+  margin-bottom:16px;max-width:720px;}
+.final-block .accent-num{font-family:"JetBrains Mono",monospace;
+  color:#6ee7b7;font-weight:500;}
+
+.section-nav{display:flex;justify-content:space-between;gap:12px;
+  margin-top:40px;padding-top:26px;border-top:1px solid var(--border);}
+.sec-nav-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;
+  border-radius:9px;border:1px solid var(--border);background:var(--surface);
+  color:var(--text-2);font-size:13.5px;font-weight:600;cursor:pointer;
+  transition:all .2s;text-decoration:none;font-family:inherit;}
+.sec-nav-btn:hover{border-color:var(--accent);color:var(--accent);
+  background:var(--accent-soft);}
+.sec-nav-btn.next{background:var(--text);border-color:var(--text);color:var(--bg);
+  margin-left:auto;}
+.sec-nav-btn.next:hover{background:var(--accent);border-color:var(--accent);color:#fff;}
+.sec-nav-btn:disabled{opacity:.35;cursor:not-allowed;}
+
+.footer{padding:50px 0;text-align:center;font-size:13px;color:var(--muted-2);
+  border-top:1px solid var(--border);font-family:"JetBrains Mono",monospace;}
+
+#toTop{position:fixed;right:24px;bottom:24px;width:44px;height:44px;
+  border-radius:11px;border:1px solid var(--border);background:var(--surface);
+  color:var(--text);font-size:16px;cursor:pointer;box-shadow:var(--shadow-sm);
+  opacity:0;transform:translateY(14px);pointer-events:none;
+  transition:all .3s;z-index:120;}
+#toTop.show{opacity:1;transform:translateY(0);pointer-events:auto;}
+#toTop:hover{background:var(--text);color:var(--bg);border-color:var(--text);}
+
+.reveal{opacity:0;transform:translateY(22px);
+  transition:opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1);
+  transition-delay:var(--d, 0s);}
+.reveal.visible{opacity:1;transform:translateY(0);}
+
+.toast{position:fixed;bottom:28px;left:50%;
+  transform:translateX(-50%) translateY(20px);background:var(--text);
+  color:var(--bg);padding:11px 20px;border-radius:10px;font-size:13.5px;
+  font-weight:500;box-shadow:var(--shadow-lg);opacity:0;pointer-events:none;
+  transition:all .3s cubic-bezier(.34,1.4,.64,1);z-index:400;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+@media (prefers-reduced-motion:reduce){
+  *{animation:none !important;transition-duration:.01ms !important;}
+  html{scroll-behavior:auto;}
+  .reveal{opacity:1;transform:none;}
+}
+
+/* ================= RESPONSIVE ================= */
+@media (max-width:1100px){
+  .layout{grid-template-columns:240px 1fr;}
+  .sidebar{padding:24px 14px 20px;}
+  .nav-link{font-size:13px;padding:8px 10px 8px 6px;grid-template-columns:28px 1fr;gap:8px;}
+  .container{padding:0 32px;}
+  .kpi-inner{padding:0 32px;}
+}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr;}
+  .sidebar{
+    position:fixed;
+    top:0;left:0;
+    width:280px;
+    transform:translateX(-100%);
+    transition:transform .3s cubic-bezier(.4,0,.2,1);
+    z-index:220;
+    box-shadow:0 0 40px rgba(0,0,0,.2);
+  }
+  .sidebar.open{transform:translateX(0);}
+  .menu-toggle{display:flex;}
+  .sidebar-overlay{display:block;}
+  .section{padding:60px 0;}
+  .section-head{grid-template-columns:56px 1fr;gap:16px;}
+  .container{padding:0 24px;padding-top:8px;}
+  .kpi-inner{padding:0 24px;grid-template-columns:repeat(2,1fr);}
+  .kpi-item{padding:14px 16px 14px 0;border-right:none;border-bottom:1px solid var(--border);}
+  .kpi-item:nth-child(odd){border-right:1px solid var(--border);}
+  .kpi-item:last-child{border-bottom:none;grid-column:span 2;border-right:none;}
+}
+@media (max-width:900px){
+  .result-meta{grid-template-columns:1fr;gap:16px;}
+  .result-meta-item{border-right:none;border-bottom:1px solid rgba(244,241,234,.14);
+    padding:0 0 16px 0;}
+  .result-meta-item:last-child{border-bottom:none;padding-bottom:0;}
+  .grid-4{grid-template-columns:repeat(2,1fr);}
+  .grid-3{grid-template-columns:1fr;}
+  .calc-grid{grid-template-columns:1fr;}
+  .info-flow{grid-template-columns:1fr;gap:12px;}
+  .info-arrow-mid .g{transform:rotate(90deg);animation:none;}
+}
+@media (max-width:640px){
+  .container{padding:0 18px;}
+  .kpi-inner{padding:0 18px;}
+  .grid-2,.grid-4{grid-template-columns:1fr;}
+  .card{padding:22px;}
+  .step{grid-template-columns:1fr;gap:12px;padding:20px;}
+  .step-num{font-size:22px;}
+  .section-head{grid-template-columns:1fr;gap:8px;}
+  .section-num{padding-top:0;}
+  .legend{grid-template-columns:repeat(2,1fr);}
+  .sec-nav-btn{font-size:12.5px;padding:9px 14px;}
+  .section-nav{flex-direction:column-reverse;}
+  .sec-nav-btn.next{margin-left:0;justify-content:center;}
+  .sec-nav-btn{justify-content:center;}
+  .toast{left:16px;right:16px;transform:translateY(20px);}
+  .toast.show{transform:translateY(0);}
+  #toTop{right:16px;bottom:16px;}
+}
+
+@media print{
+  .cover,.sidebar,.menu-toggle,.sidebar-overlay,#toTop,#progressBar,
+  .calc-actions,.section-nav,.calc-tools,.toast,.solution-toggle,.calc-tabs,
+  .cover-hint{display:none !important;}
+  body{background:#fff;color:#000;font-size:11pt;}
+  #app{opacity:1 !important;}
+  .layout{grid-template-columns:1fr !important;}
+  .section{page-break-inside:avoid;padding:24px 0;border-bottom:1px solid #ddd;}
+  .card,.step,.table-wrap,.chart-card,.quiz-card,.final-block,.result-hero,
+  .formula-hero,.growth-bars,.certificate,.cert-preview{
+    box-shadow:none !important;page-break-inside:avoid;}
+  .result-hero,.final-block,.formula-hero{background:#f5f5f5 !important;color:#000 !important;}
+  .result-big,.result-eyebrow,.result-meta-v,.final-block h2,.final-block p{
+    color:#000 !important;-webkit-text-fill-color:#000 !important;background:none !important;}
+  .reveal{opacity:1 !important;transform:none !important;}
+  .hidden-solution.hidden .real{filter:none;opacity:1;}
+  .hidden-solution.hidden .mask{display:none;}
+}
+</style>
+</head>
+<body class="locked">
+
+<div id="progressBar" role="progressbar" aria-label="Прогресс"></div>
+
+<!-- ================= ОБЛОЖКА ================= -->
+<header class="cover" id="cover" role="button" tabindex="0" aria-label="Начать">
+  <div class="cover-grid">
+    <div class="cover-left">
+      <div class="cover-topbar">
+        <span class="cover-number">Case 02</span>
+        <span class="cover-sep"></span>
+        <span class="eyebrow">Financial Theory · PV</span>
+      </div>
+      <h1>Текущая<br><em>стоимость</em></h1>
+      <p class="cover-sub">
+        Расчёт приведённой стоимости будущего дохода с учётом ставки дисконтирования,
+        временной стоимости денег и фактора риска.
+      </p>
+      <div class="cover-cta">
+        <button class="btn-primary" id="startBtn" type="button">Начать выполнение</button>
+        <span class="cover-hint">клик в любом месте</span>
+      </div>
+    </div>
+
+    <div class="cover-right">
+      <div class="cover-card">
+        <div class="cover-card-label">Параметры кейса</div>
+        <div class="cover-row">
+          <span class="cover-row-k">Будущий доход, FV</span>
+          <span class="cover-row-v">100 000 000 ₸</span>
+        </div>
+        <div class="cover-row">
+          <span class="cover-row-k">Период, n</span>
+          <span class="cover-row-v">4 года</span>
+        </div>
+        <div class="cover-row">
+          <span class="cover-row-k">Ставка, r</span>
+          <span class="cover-row-v">15%</span>
+        </div>
+
+        <div class="cover-arrow" aria-hidden="true">
+          <svg viewBox="0 0 220 24" fill="none">
+            <line x1="0" y1="12" x2="200" y2="12" stroke="currentColor"
+                  stroke-width="1" stroke-dasharray="2 4"/>
+            <path d="M200 6 L214 12 L200 18 Z" fill="currentColor"/>
+          </svg>
+        </div>
+
+        <div class="cover-big">
+          <div class="cover-big-label">PV сегодня</div>
+          <div class="cover-big-value">57,18 млн ₸</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ================= МОБИЛЬНОЕ МЕНЮ ================= -->
+<button class="menu-toggle" id="menuToggle" type="button" aria-label="Открыть меню">☰</button>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ================= ПРИЛОЖЕНИЕ ================= -->
+<div id="app" hidden>
+<div class="layout">
+
+  <!-- ======== SIDEBAR ======== -->
+  <aside class="sidebar" id="sidebar" aria-label="Навигация по разделам">
+    <div class="sidebar-brand">PV<em> · </em>кейс 02</div>
+
+    <div class="sidebar-label">Разделы</div>
+
+    <nav class="sidebar-nav" id="navLinks">
+      <a class="nav-link" href="#task" data-target="task">
+        <span class="nav-num">01</span><span>Задание</span>
+      </a>
+      <a class="nav-link" href="#data" data-target="data">
+        <span class="nav-num">02</span><span>Дано</span>
+      </a>
+      <a class="nav-link" href="#theory" data-target="theory">
+        <span class="nav-num">03</span><span>Теория</span>
+      </a>
+      <a class="nav-link" href="#derivation" data-target="derivation">
+        <span class="nav-num">04</span><span>Вывод</span>
+      </a>
+      <a class="nav-link" href="#steps" data-target="steps">
+        <span class="nav-num">05</span><span>Расчёт</span>
+      </a>
+      <a class="nav-link" href="#result" data-target="result">
+        <span class="nav-num">06</span><span>Результат</span>
+      </a>
+      <a class="nav-link" href="#npv" data-target="npv">
+        <span class="nav-num">07</span><span>NPV</span>
+      </a>
+      <a class="nav-link" href="#mistakes" data-target="mistakes">
+        <span class="nav-num">08</span><span>Ошибки</span>
+      </a>
+      <a class="nav-link" href="#calc" data-target="calc">
+        <span class="nav-num">09</span><span>Калькулятор</span>
+      </a>
+      <a class="nav-link" href="#sensitivity" data-target="sensitivity">
+        <span class="nav-num">10</span><span>Анализ</span>
+      </a>
+      <a class="nav-link" href="#compounding" data-target="compounding">
+        <span class="nav-num">11</span><span>Частоты</span>
+      </a>
+      <a class="nav-link" href="#growth" data-target="growth">
+        <span class="nav-num">12</span><span>Рост</span>
+      </a>
+      <a class="nav-link" href="#cases" data-target="cases">
+        <span class="nav-num">13</span><span>Кейсы</span>
+      </a>
+      <a class="nav-link" href="#quiz" data-target="quiz">
+        <span class="nav-num">14</span><span>Тест</span>
+      </a>
+      <a class="nav-link" href="#cert" data-target="cert">
+        <span class="nav-num">15</span><span>Сертификат</span>
+      </a>
+      <a class="nav-link" href="#lit" data-target="lit">
+        <span class="nav-num">16</span><span>Литература</span>
+      </a>
+      <a class="nav-link" href="#final" data-target="final">
+        <span class="nav-num">17</span><span>Итог</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <span class="theme-label">Тема</span>
+      <button class="icon-btn" id="themeToggle" type="button" aria-label="Переключить тему">
+        <span class="moon">☾</span><span class="sun">☀</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ======== CONTENT ======== -->
+  <div class="content">
+
+    <div class="kpi-strip">
+      <div class="kpi-inner">
+        <div class="kpi-item">
+          <span class="kpi-label">PV сегодня</span>
+          <span class="kpi-value accent" id="kpiPV">57,18 млн ₸</span>
+        </div>
+        <div class="kpi-item">
+          <span class="kpi-label">FV через 4 года</span>
+          <span class="kpi-value" id="kpiFV">100,00 млн ₸</span>
+        </div>
+        <div class="kpi-item">
+          <span class="kpi-label">Дисконт</span>
+          <span class="kpi-value" id="kpiDisc">42,82 млн ₸</span>
+        </div>
+        <div class="kpi-item">
+          <span class="kpi-label">Коэф.</span>
+          <span class="kpi-value" id="kpiFactor">1,749</span>
+        </div>
+        <div class="kpi-item">
+          <span class="kpi-label">Ставка · Срок</span>
+          <span class="kpi-value" id="kpiRateN">15% · 4 г.</span>
+        </div>
+      </div>
+    </div>
+
+    <main>
+
+      <!-- 01 ЗАДАНИЕ -->
+      <section class="section" id="task">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">01</span>
+            <div>
+              <h2>Условие задачи</h2>
+              <p class="section-sub">Кейс 2. Текущая стоимость</p>
+            </div>
+          </div>
+          <div class="card reveal" style="--d:.08s">
+            <p style="font-size:17px;color:var(--text-2);margin-bottom:14px">
+              Инвестор получит <strong>100 млн ₸</strong> через <strong>4 года</strong>.
+              Ставка дисконтирования составляет <strong>15%</strong>.
+            </p>
+            <p style="font-size:17px;color:var(--text-2);margin-bottom:0">
+              Необходимо определить текущую стоимость будущего дохода
+              и объяснить значение дисконтирования.
+            </p>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:22px">
+              <span class="eyebrow" style="padding:6px 12px;border:1px solid var(--border);
+                border-radius:999px;color:var(--text-2)">100 млн ₸</span>
+              <span class="eyebrow" style="padding:6px 12px;border:1px solid var(--border);
+                border-radius:999px;color:var(--text-2)">4 года</span>
+              <span class="eyebrow" style="padding:6px 12px;border:1px solid var(--border);
+                border-radius:999px;color:var(--text-2)">15%</span>
+            </div>
+          </div>
+          <div class="section-nav reveal" style="--d:.12s">
+            <button class="sec-nav-btn" disabled>← Назад</button>
+            <a class="sec-nav-btn next" href="#data">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 02 ДАНО -->
+      <section class="section" id="data">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">02</span>
+            <div>
+              <h2>Исходные данные</h2>
+              <p class="section-sub">Параметры задачи</p>
+            </div>
+          </div>
+          <div class="grid grid-4">
+            <div class="stat-card reveal" style="--d:.05s">
+              <span class="stat-label">Будущий доход · FV</span>
+              <span class="stat-value">100 000 000 ₸</span>
+            </div>
+            <div class="stat-card reveal" style="--d:.10s">
+              <span class="stat-label">Срок · n</span>
+              <span class="stat-value">4 года</span>
+            </div>
+            <div class="stat-card reveal" style="--d:.15s">
+              <span class="stat-label">Ставка · r</span>
+              <span class="stat-value">15%</span>
+            </div>
+            <div class="stat-card reveal" style="--d:.20s">
+              <span class="stat-label">Найти</span>
+              <span class="stat-value accent">PV = ?</span>
+            </div>
+          </div>
+          <div class="section-nav reveal" style="--d:.24s">
+            <a class="sec-nav-btn" href="#task">← Назад</a>
+            <a class="sec-nav-btn next" href="#theory">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 03 ТЕОРИЯ -->
+      <section class="section" id="theory">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">03</span>
+            <div>
+              <h2>Текущая стоимость</h2>
+              <p class="section-sub">Present Value — приведение будущего к сегодняшнему</p>
+            </div>
+          </div>
+          <div class="grid grid-2">
+            <div class="card reveal" style="--d:.05s">
+              <p style="font-size:16.5px;color:var(--text-2);margin-bottom:16px">
+                <span class="term" data-tip="Present Value — текущая стоимость будущего денежного потока.">Текущая стоимость (PV)</span>
+                показывает, сколько будущая денежная сумма стоит сегодня
+                с учётом определённой ставки дисконтирования.
+              </p>
+              <p style="font-size:16.5px;color:var(--text-2);margin-bottom:16px">
+                Деньги имеют временную стоимость. 100 млн ₸ сегодня и 100 млн ₸ через 4 года
+                не эквивалентны с экономической точки зрения.
+              </p>
+              <p style="font-size:16.5px;color:var(--text-2);margin-bottom:0">
+                Деньгами, которыми располагают сегодня, можно управлять: инвестировать,
+                получать доход, направлять в проекты. Поэтому будущую сумму приводят
+                к текущему моменту.
+              </p>
+            </div>
+            <div class="card warm reveal" style="--d:.12s">
+              <div class="eyebrow" style="margin-bottom:20px">Временная линия</div>
+              <div class="info-flow" style="grid-template-columns:1fr;gap:0">
+                <div class="info-node today">
+                  <div class="label">Сегодня · t = 0</div>
+                  <div class="value">PV</div>
+                </div>
+                <div class="info-arrow-mid" style="padding:18px 0">
+                  <span class="g">↓</span>
+                  <span>n = 4 года · r = 15%</span>
+                </div>
+                <div class="info-node">
+                  <div class="label">Будущее · t = 4</div>
+                  <div class="value">FV</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="section-nav reveal" style="--d:.18s">
+            <a class="sec-nav-btn" href="#data">← Назад</a>
+            <a class="sec-nav-btn next" href="#derivation">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 04 ВЫВОД -->
+      <section class="section" id="derivation">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">04</span>
+            <div>
+              <h2>Откуда берётся формула</h2>
+              <p class="section-sub">Дисконтирование — обратная операция к сложному проценту</p>
+            </div>
+          </div>
+          <div class="card reveal" style="--d:.05s">
+            <p style="font-size:16.5px;color:var(--text-2);margin-bottom:26px">
+              Если известна текущая сумма и ставка, будущую стоимость находим
+              через начисление сложного процента. Дисконтирование решает обратную задачу.
+            </p>
+            <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:22px;align-items:center">
+              <div class="card plain" style="text-align:center;padding:26px">
+                <div class="eyebrow" style="margin-bottom:14px">Прямая задача</div>
+                <div class="serif" style="font-size:clamp(20px,3vw,26px);line-height:1.2">
+                  FV = PV · (1 + r)<sup>n</sup>
+                </div>
+              </div>
+              <div style="font-size:24px;color:var(--accent);
+                font-family:'Instrument Serif',serif;font-style:italic">⇄</div>
+              <div class="card" style="text-align:center;padding:26px;
+                background:var(--accent-soft);border-color:var(--accent-soft-2)">
+                <div class="eyebrow" style="margin-bottom:14px;color:var(--accent)">
+                  Обратная задача
+                </div>
+                <div class="serif" style="font-size:clamp(20px,3vw,26px);line-height:1.2">
+                  PV = FV / (1 + r)<sup>n</sup>
+                </div>
+              </div>
+            </div>
+            <p style="font-size:14px;color:var(--muted);margin-top:22px;text-align:center">
+              Достаточно выразить PV: разделить обе части уравнения на (1 + r)<sup>n</sup>.
+            </p>
+          </div>
+          <div class="section-nav reveal" style="--d:.1s">
+            <a class="sec-nav-btn" href="#theory">← Назад</a>
+            <a class="sec-nav-btn next" href="#steps">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 РАСЧЁТ -->
+      <section class="section" id="steps">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">05</span>
+            <div>
+              <h2>Пошаговый расчёт</h2>
+              <p class="section-sub">От исходных данных к текущей стоимости</p>
+            </div>
+          </div>
+
+          <div class="solution-toggle reveal">
+            <div class="switch on" id="solSwitch" role="switch" aria-checked="true" tabindex="0"></div>
+            <span class="switch-label" id="solLabel">Показывать решение</span>
+          </div>
+
+          <div class="formula-hero reveal" style="--d:.03s;padding:44px 28px">
+            <div class="formula">
+              <span class="fvar">PV</span> <span class="fop">=</span>
+              <span class="fvar">FV</span> <span class="fop">/</span>
+              (1 + <span class="fvar">r</span>)<sup><span class="fvar">n</span></sup>
+            </div>
+          </div>
+
+          <div class="legend">
+            <div class="legend-item reveal" style="--d:.05s">
+              <div class="legend-sym">PV</div>
+              <div class="legend-desc">Текущая стоимость</div>
+            </div>
+            <div class="legend-item reveal" style="--d:.10s">
+              <div class="legend-sym">FV</div>
+              <div class="legend-desc">Будущая стоимость</div>
+            </div>
+            <div class="legend-item reveal" style="--d:.15s">
+              <div class="legend-sym">r</div>
+              <div class="legend-desc">Ставка дисконтирования</div>
+            </div>
+            <div class="legend-item reveal" style="--d:.20s">
+              <div class="legend-sym">n</div>
+              <div class="legend-desc">Число периодов</div>
+            </div>
+          </div>
+
+          <div class="steps" style="margin-top:34px">
+            <div class="step reveal" style="--d:.04s">
+              <div class="step-num">i</div>
+              <div>
+                <div class="step-title">Записываем исходные данные</div>
+                <div class="hidden-solution">
+                  <div class="real">
+                    <div class="step-code">FV = 100 000 000 ₸</div>
+                    <div class="step-code">r = 15% = 0,15</div>
+                    <div class="step-code">n = 4 года</div>
+                  </div>
+                  <div class="mask">Нажмите, чтобы показать шаг</div>
+                </div>
+              </div>
+            </div>
+            <div class="step reveal" style="--d:.10s">
+              <div class="step-num">ii</div>
+              <div>
+                <div class="step-title">Подставляем данные в формулу</div>
+                <div class="hidden-solution">
+                  <div class="real">
+                    <div class="step-code">PV = 100 000 000 / (1 + 0,15)<sup>4</sup></div>
+                    <div class="step-hint">Ставка переведена в десятичную дробь: 15% = 0,15</div>
+                  </div>
+                  <div class="mask">Нажмите, чтобы показать шаг</div>
+                </div>
+              </div>
+            </div>
+            <div class="step reveal" style="--d:.16s">
+              <div class="step-num">iii</div>
+              <div>
+                <div class="step-title">Коэффициент дисконтирования</div>
+                <div class="hidden-solution">
+                  <div class="real">
+                    <div class="step-code">
+                      (1 + 0,15)<sup>4</sup> = 1,15<sup>4</sup> =
+                      <span class="hl">1,74900625</span>
+                    </div>
+                    <div class="step-hint">1,15² = 1,3225 &nbsp;→&nbsp; 1,3225² = 1,74900625</div>
+                  </div>
+                  <div class="mask">Нажмите, чтобы показать шаг</div>
+                </div>
+              </div>
+            </div>
+            <div class="step reveal" style="--d:.22s">
+              <div class="step-num">iv</div>
+              <div>
+                <div class="step-title">Текущая стоимость</div>
+                <div class="hidden-solution">
+                  <div class="real">
+                    <div class="step-code">PV = 100 000 000 / 1,74900625</div>
+                    <div class="step-code">PV ≈ <span class="hl">57 175 153 ₸</span></div>
+                    <div class="step-hint">Округлённо: <strong>PV ≈ 57,18 млн ₸</strong></div>
+                  </div>
+                  <div class="mask">Нажмите, чтобы показать шаг</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-nav reveal" style="--d:.28s">
+            <a class="sec-nav-btn" href="#derivation">← Назад</a>
+            <a class="sec-nav-btn next" href="#result">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 06 РЕЗУЛЬТАТ -->
+      <section class="section" id="result">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">06</span>
+            <div>
+              <h2>Главный результат</h2>
+              <p class="section-sub">Итоговая величина текущей стоимости</p>
+            </div>
+          </div>
+          <div class="result-hero reveal" style="--d:.05s">
+            <div class="result-eyebrow">Present Value</div>
+            <div class="result-big">57,18<em> млн</em> <span class="unit">₸</span></div>
+            <div class="result-meta">
+              <div class="result-meta-item">
+                <div class="result-meta-k">Будущий доход</div>
+                <div class="result-meta-v">100,00 млн ₸</div>
+              </div>
+              <div class="result-meta-item">
+                <div class="result-meta-k">Срок</div>
+                <div class="result-meta-v">4 года</div>
+              </div>
+              <div class="result-meta-item">
+                <div class="result-meta-k">Ставка</div>
+                <div class="result-meta-v">15%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card reveal" style="--d:.12s;margin-top:22px">
+            <p style="font-size:16.5px;color:var(--text-2);margin-bottom:16px">
+              Если инвестор должен получить 100 млн ₸ через 4 года, то при ставке 15%
+              их текущая стоимость составляет около <strong>57,18 млн ₸</strong>.
+            </p>
+            <p style="font-size:16.5px;color:var(--text-2);margin-bottom:0">
+              Это означает, что 57,18 млн ₸, размещённые сегодня под 15% годовых,
+              через 4 года выросли бы до 100 млн ₸. Поэтому обе суммы эквивалентны
+              с точки зрения стоимости денег во времени.
+            </p>
+            <div class="note accent" style="margin-top:20px">
+              <strong>Важно:</strong> разница между 100 млн ₸ и 57,18 млн ₸ — это
+              не убыток инвестора, а отражение временной стоимости денег и требуемой доходности.
+            </div>
+          </div>
+
+          <div class="section-nav reveal" style="--d:.18s">
+            <a class="sec-nav-btn" href="#steps">← Назад</a>
+            <a class="sec-nav-btn next" href="#npv">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 07 NPV -->
+      <section class="section" id="npv">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">07</span>
+            <div>
+              <h2>Обобщение: NPV и поток платежей</h2>
+              <p class="section-sub">Что делать, когда платежей несколько</p>
+            </div>
+          </div>
+          <div class="grid grid-2">
+            <div class="card reveal" style="--d:.05s">
+              <p style="font-size:16px;color:var(--text-2);margin-bottom:16px">
+                В реальных проектах будущий доход — это не одна сумма, а поток платежей
+                по годам. Тогда текущая стоимость — это сумма приведённых стоимостей
+                каждого платежа.
+              </p>
+              <div class="formula-hero" style="padding:32px 20px;border-radius:14px">
+                <div class="formula" style="font-size:clamp(20px,3.4vw,32px)">
+                  NPV = Σ [ CF<sub>t</sub> / (1 + <span class="fvar">r</span>)<sup>t</sup> ] − I₀
+                </div>
+              </div>
+              <p style="font-size:14px;color:var(--muted);margin-top:16px">
+                Здесь CF<sub>t</sub> — платёж в период t, I₀ — первоначальные инвестиции.
+                Если NPV &gt; 0, проект создаёт стоимость.
+              </p>
+            </div>
+
+            <div class="card reveal" style="--d:.12s">
+              <div class="eyebrow" style="margin-bottom:14px">
+                Пример · 3 платежа по 40 млн ₸ · r = 15%
+              </div>
+              <div class="table-wrap" style="border-radius:12px">
+                <table style="min-width:0">
+                  <thead>
+                    <tr><th>Год</th><th>Платёж</th><th>PV платежа</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td>1</td><td>40,00</td><td>34,78</td></tr>
+                    <tr><td>2</td><td>40,00</td><td>30,25</td></tr>
+                    <tr><td>3</td><td>40,00</td><td>26,30</td></tr>
+                    <tr class="highlight"><td>Σ</td><td>120,00</td><td>91,33</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p style="font-size:13.5px;color:var(--muted);margin-top:14px">
+                Итоговая PV потока — 91,33 млн ₸. Если первоначальные вложения I₀
+                меньше этой суммы, проект имеет положительный NPV.
+              </p>
+            </div>
+          </div>
+
+          <div class="section-nav reveal" style="--d:.18s">
+            <a class="sec-nav-btn" href="#result">← Назад</a>
+            <a class="sec-nav-btn next" href="#mistakes">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 08 ОШИБКИ -->
+      <section class="section" id="mistakes">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">08</span>
+            <div>
+              <h2>Частые ошибки</h2>
+              <p class="section-sub">На что обратить внимание при решении</p>
+            </div>
+          </div>
+          <div class="grid grid-2">
+            <div class="mistake reveal" style="--d:.04s">
+              <div class="mistake-icon">×</div>
+              <div>
+                <div class="mistake-title">Путать ставку с инфляцией</div>
+                <div class="mistake-body">Инфляция — лишь один из факторов, формирующих
+                  ставку. Ставка дисконтирования включает также риск и альтернативную
+                  доходность.</div>
+              </div>
+            </div>
+            <div class="mistake reveal" style="--d:.10s">
+              <div class="mistake-icon">×</div>
+              <div>
+                <div class="mistake-title">Трактовать дисконт как убыток</div>
+                <div class="mistake-body">42,82 млн ₸ — не потеря инвестора, а разница
+                  между будущей и приведённой стоимостью, отражающая цену времени.</div>
+              </div>
+            </div>
+            <div class="mistake reveal" style="--d:.16s">
+              <div class="mistake-icon">×</div>
+              <div>
+                <div class="mistake-title">Не переводить проценты в доли</div>
+                <div class="mistake-body">В формулу подставляется 0,15, а не 15.
+                  Иначе коэффициент будет (1 + 15)⁴ = 65 536 — очевидно ошибочный
+                  результат.</div>
+              </div>
+            </div>
+            <div class="mistake reveal" style="--d:.22s">
+              <div class="mistake-icon">×</div>
+              <div>
+                <div class="mistake-title">Путать FV и PV в формуле</div>
+                <div class="mistake-body">PV всегда меньше FV при положительной ставке
+                  и сроке. Если получилось больше — перепутаны местами числитель
+                  и знаменатель.</div>
+              </div>
+            </div>
+          </div>
+          <div class="section-nav reveal" style="--d:.28s">
+            <a class="sec-nav-btn" href="#npv">← Назад</a>
+            <a class="sec-nav-btn next" href="#calc">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 09 КАЛЬКУЛЯТОР -->
+      <section class="section" id="calc">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">09</span>
+            <div>
+              <h2>Универсальный калькулятор</h2>
+              <p class="section-sub">Найдите PV, FV, ставку или срок</p>
+            </div>
+          </div>
+
+          <div class="calc-tabs reveal" role="tablist">
+            <button class="calc-tab active" data-mode="pv" role="tab">PV = FV / (1+r)ⁿ</button>
+            <button class="calc-tab" data-mode="fv" role="tab">FV = PV · (1+r)ⁿ</button>
+            <button class="calc-tab" data-mode="r" role="tab">r = (FV/PV)^(1/n) − 1</button>
+            <button class="calc-tab" data-mode="n" role="tab">n = ln(FV/PV) / ln(1+r)</button>
+          </div>
+
+          <div class="calc-grid">
+            <div class="card reveal" style="--d:.05s">
+              <div class="field" id="fieldFV">
+                <label for="inFV"><span>Будущий доход · FV, ₸</span></label>
+                <input type="number" id="inFV" value="100000000" min="0"
+                  step="1000000" inputmode="decimal">
+              </div>
+              <div class="field" id="fieldPV" style="display:none">
+                <label for="inPV"><span>Текущая стоимость · PV, ₸</span></label>
+                <input type="number" id="inPV" value="57175153" min="0"
+                  step="1000000" inputmode="decimal">
+              </div>
+              <div class="field" id="fieldN">
+                <label for="inN">
+                  <span>Срок · n, лет</span>
+                  <span class="fv" id="valN">4</span>
+                </label>
+                <input type="number" id="inN" value="4" min="0.01" step="1" inputmode="decimal">
+                <input type="range" id="sliderN" min="1" max="15" step="1" value="4">
+              </div>
+              <div class="field" id="fieldR" style="margin-bottom:0">
+                <label for="inR">
+                  <span>Ставка · r, %</span>
+                  <span class="fv" id="valR">15%</span>
+                </label>
+                <input type="number" id="inR" value="15" step="0.1" inputmode="decimal">
+                <input type="range" id="sliderR" min="0" max="40" step="0.5" value="15">
+              </div>
+
+              <div class="calc-actions">
+                <button class="btn-solid" id="calcBtn" type="button">Рассчитать</button>
+                <button class="btn-outline" id="resetBtn" type="button">Сбросить</button>
+              </div>
+              <div class="calc-error" id="calcError" role="alert"></div>
+              <div class="calc-hint" id="calcHint"></div>
+            </div>
+
+            <div class="calc-output reveal" style="--d:.12s">
+              <div class="calc-output-label" id="outLabel">PV · текущая стоимость</div>
+              <div class="calc-output-value" id="outValue">57,18<em> млн</em></div>
+              <div class="calc-output-sub" id="outSub">57 175 153 ₸</div>
+
+              <div class="calc-meta">
+                <div class="calc-meta-row">
+                  <span>Коэффициент дисконтирования</span><b id="outFactor">1,74900625</b>
+                </div>
+                <div class="calc-meta-row">
+                  <span>Формула</span><b id="outFormula">100 000 000 / (1+0,15)^4</b>
+                </div>
+                <div class="calc-meta-row">
+                  <span>Дисконт</span><b id="outDiscount">42 824 847 ₸</b>
+                </div>
+                <div class="calc-meta-row">
+                  <span>Эффективная ставка</span><b id="outEffective">15,00%</b>
+                </div>
+              </div>
+
+              <div class="calc-tools">
+                <button class="tool-btn" id="copyBtn" type="button">⧉ Копировать</button>
+                <button class="tool-btn" id="texBtn" type="button">Tₓ LaTeX</button>
+                <button class="tool-btn" id="saveBtn" type="button">＋ В историю</button>
+                <button class="tool-btn" id="csvBtn" type="button">↓ CSV</button>
+                <button class="tool-btn" id="printBtn" type="button">⎙ PDF</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card reveal" style="--d:.18s;margin-top:22px">
+            <div class="eyebrow" style="margin-bottom:14px">История расчётов</div>
+            <div class="history-list" id="historyList">
+              <div class="history-empty">Пока нет сохранённых расчётов</div>
+            </div>
+          </div>
+
+          <div class="section-nav reveal" style="--d:.22s">
+            <a class="sec-nav-btn" href="#mistakes">← Назад</a>
+            <a class="sec-nav-btn next" href="#sensitivity">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 10 АНАЛИЗ -->
+      <section class="section" id="sensitivity">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">10</span>
+            <div>
+              <h2>Анализ чувствительности</h2>
+              <p class="section-sub">Как меняется PV при разных ставках и сроках</p>
+            </div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="reveal" style="--d:.05s">
+              <div class="eyebrow" style="margin-bottom:14px">Таблица чувствительности</div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Ставка</th><th>PV, млн ₸</th></tr>
+                  </thead>
+                  <tbody id="sensBody"></tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="reveal" style="--d:.12s">
+              <div class="eyebrow" style="margin-bottom:14px">PV как функция ставки</div>
+              <div class="chart-card">
+                <div class="chart-legend">
+                  <span class="chart-legend-item">
+                    <span class="chart-legend-dot" style="background:#047857"></span>r = 5%
+                  </span>
+                  <span class="chart-legend-item">
+                    <span class="chart-legend-dot" style="background:#0891b2"></span>r = 10%
+                  </span>
+                  <span class="chart-legend-item">
+                    <span class="chart-legend-dot" style="background:#b45309"></span>r = 15%
+                  </span>
+                  <span class="chart-legend-item">
+                    <span class="chart-legend-dot" style="background:#9f1239"></span>r = 20%
+                  </span>
+                </div>
+                <div class="chart-holder">
+                  <svg id="chartR" viewBox="0 0 700 340"
+                    preserveAspectRatio="xMidYMid meet" role="img"
+                    aria-label="PV vs ставка"></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="grid grid-2" style="margin-top:22px">
+            <div class="reveal" style="--d:.16s">
+              <div class="eyebrow" style="margin-bottom:14px">PV как функция срока</div>
+              <div class="chart-card">
+                <div class="chart-holder">
+                  <svg id="chartN" viewBox="0 0 700 340"
+                    preserveAspectRatio="xMidYMid meet" role="img"
+                    aria-label="PV vs срок"></svg>
+                </div>
+              </div>
+            </div>
+
+            <div class="reveal" style="--d:.22s">
+              <div class="eyebrow" style="margin-bottom:14px">«Амортизация ожиданий»</div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>Год</th><th>PV остатка</th><th>Прирост за год</th></tr>
+                  </thead>
+                  <tbody id="amortBody"></tbody>
+                </table>
+              </div>
+              <p style="font-size:13px;color:var(--muted);margin-top:12px">
+                Показывает, как «сегодняшняя ценность» будущего платежа растёт
+                по мере приближения даты получения.
+              </p>
+            </div>
+          </div>
+
+          <div class="note accent reveal" style="--d:.26s;margin-top:22px">
+            При увеличении ставки дисконтирования текущая стоимость уменьшается.
+            Чем дальше во времени платёж, тем сильнее эффект дисконтирования.
+          </div>
+
+          <div class="section-nav reveal" style="--d:.3s">
+            <a class="sec-nav-btn" href="#calc">← Назад</a>
+            <a class="sec-nav-btn next" href="#compounding">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11 ЧАСТОТЫ -->
+      <section class="section" id="compounding">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">11</span>
+            <div>
+              <h2>Частота начисления</h2>
+              <p class="section-sub">Как изменится PV при разных периодах начисления</p>
+            </div>
+          </div>
+
+          <div class="card reveal" style="--d:.05s">
+            <p style="font-size:16px;color:var(--text-2);margin-bottom:22px">
+              Формула PV зависит от того, как часто начисляется процент.
+              При одной и той же номинальной ставке 15% результат будет разным.
+            </p>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Частота</th>
+                    <th>Формула</th>
+                    <th>Коэффициент</th>
+                    <th>PV, млн ₸</th>
+                  </tr>
+                </thead>
+                <tbody id="compBody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="section-nav reveal" style="--d:.1s">
+            <a class="sec-nav-btn" href="#sensitivity">← Назад</a>
+            <a class="sec-nav-btn next" href="#growth">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12 РОСТ -->
+      <section class="section" id="growth">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">12</span>
+            <div>
+              <h2>Рост капитала во времени</h2>
+              <p class="section-sub">От текущей стоимости к будущей через сложный процент</p>
+            </div>
+          </div>
+          <div class="card reveal" style="--d:.05s" id="growthCard">
+            <p style="font-size:16px;color:var(--text-2);margin-bottom:8px">
+              Если сегодня вложить 57,18 млн ₸ под 15% годовых, капитал будет расти так:
+            </p>
+            <p style="font-size:13.5px;color:var(--muted);margin-bottom:26px">
+              Через 4 года вложение достигает 100 млн ₸ — это и есть будущая стоимость.
+            </p>
+            <div class="growth-bars" id="growthBars"></div>
+          </div>
+          <div class="section-nav reveal" style="--d:.1s">
+            <a class="sec-nav-btn" href="#compounding">← Назад</a>
+            <a class="sec-nav-btn next" href="#cases">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13 КЕЙСЫ -->
+      <section class="section" id="cases">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">13</span>
+            <div>
+              <h2>Сравнение сценариев</h2>
+              <p class="section-sub">Как меняется PV при изменении параметров</p>
+            </div>
+          </div>
+
+          <div class="reveal" style="--d:.05s;margin-bottom:22px">
+            <div class="segmented-lg" id="caseSwitch">
+              <button data-case="A" class="active">A · 100 млн ₸ · 4 года · 15%</button>
+              <button data-case="B">B · 100 млн ₸ · 4 года · 10%</button>
+              <button data-case="C">C · 100 млн ₸ · 7 лет · 15%</button>
+            </div>
+          </div>
+
+          <div class="grid grid-3">
+            <div class="stat-card reveal" style="--d:.10s">
+              <span class="stat-label">Будущий доход · FV</span>
+              <span class="stat-value" id="caseFV">100 000 000 ₸</span>
+            </div>
+            <div class="stat-card reveal" style="--d:.14s">
+              <span class="stat-label">Срок · n</span>
+              <span class="stat-value" id="caseN">4 года</span>
+            </div>
+            <div class="stat-card reveal" style="--d:.18s">
+              <span class="stat-label">Ставка · r</span>
+              <span class="stat-value" id="caseR">15%</span>
+            </div>
+          </div>
+
+          <div class="result-hero reveal" style="--d:.22s;margin-top:22px">
+            <div class="result-eyebrow">Текущая стоимость</div>
+            <div class="result-big" id="casePV">57,18<em> млн</em> <span class="unit">₸</span></div>
+            <p style="font-size:15px;color:#a8a29e;margin-top:18px;position:relative"
+              id="caseComment">Основной сценарий кейса</p>
+          </div>
+
+          <div class="section-nav reveal" style="--d:.26s">
+            <a class="sec-nav-btn" href="#growth">← Назад</a>
+            <a class="sec-nav-btn next" href="#quiz">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 14 ТЕСТ -->
+      <section class="section" id="quiz">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">14</span>
+            <div>
+              <h2>Мини-тест</h2>
+              <p class="section-sub">Проверьте понимание ключевых идей</p>
+            </div>
+          </div>
+          <div id="quizContainer"></div>
+          <div class="quiz-score" id="quizScore"></div>
+          <div class="section-nav reveal" style="--d:.1s">
+            <a class="sec-nav-btn" href="#cases">← Назад</a>
+            <a class="sec-nav-btn next" href="#cert">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 15 СЕРТИФИКАТ -->
+      <section class="section" id="cert">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">15</span>
+            <div>
+              <h2>Сертификат</h2>
+              <p class="section-sub">Подтверждение прохождения кейса</p>
+            </div>
+          </div>
+
+          <div class="certificate reveal" style="--d:.05s">
+            <div class="cert-eyebrow">Case 02 · Present Value</div>
+            <div class="cert-title">Сертификат об изучении</div>
+            <div class="cert-sub">
+              Выдан за успешное прохождение интерактивного кейса «Текущая стоимость»
+            </div>
+
+            <div class="cert-name-field">
+              <input type="text" id="certName" placeholder="Ваше имя" maxlength="40">
+            </div>
+
+            <div class="cert-preview" id="certPreview">
+              <div class="eyebrow">Настоящим подтверждается, что</div>
+              <div class="cert-preview-name" id="certPreviewName">—</div>
+              <div class="cert-preview-line"></div>
+              <div class="cert-preview-text">
+                изучил(а) тему «Текущая стоимость», освоил(а) формулу дисконтирования
+                и научился(ась) приводить будущие денежные потоки к текущему моменту.
+              </div>
+              <div class="cert-preview-meta">
+                <span>PV = 57,18 млн ₸</span>
+                <span>r = 15%</span>
+                <span>n = 4 года</span>
+                <span id="certDate">2026</span>
+              </div>
+            </div>
+
+            <div class="calc-tools" style="justify-content:center;margin-top:24px">
+              <button class="tool-btn" id="certPrint" type="button">⎙ Печать сертификата</button>
+            </div>
+          </div>
+
+          <div class="section-nav reveal" style="--d:.1s">
+            <a class="sec-nav-btn" href="#quiz">← Назад</a>
+            <a class="sec-nav-btn next" href="#lit">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 16 ЛИТЕРАТУРА -->
+      <section class="section" id="lit">
+        <div class="container">
+          <div class="section-head reveal">
+            <span class="section-num">16</span>
+            <div>
+              <h2>Литература</h2>
+              <p class="section-sub">Для углублённого изучения темы</p>
+            </div>
+          </div>
+          <div class="card reveal" style="--d:.05s">
+            <div class="lit-item">
+              <div class="lit-num">01</div>
+              <div>
+                <div class="lit-title">Bodie, Z., Kane, A., Marcus, A. — Investments</div>
+                <div class="lit-meta">McGraw-Hill Education · главы о временной стоимости
+                  денег и дисконтировании денежных потоков.</div>
+              </div>
+            </div>
+            <div class="lit-item">
+              <div class="lit-num">02</div>
+              <div>
+                <div class="lit-title">
+                  Brealey, R., Myers, S., Allen, F. — Principles of Corporate Finance
+                </div>
+                <div class="lit-meta">McGraw-Hill · основы NPV и приведённой стоимости
+                  будущих потоков.</div>
+              </div>
+            </div>
+            <div class="lit-item">
+              <div class="lit-num">03</div>
+              <div>
+                <div class="lit-title">Damodaran, A. — Investment Valuation</div>
+                <div class="lit-meta">Wiley · методы оценки ставки дисконтирования
+                  и учёта риска.</div>
+              </div>
+            </div>
+            <div class="lit-item">
+              <div class="lit-num">04</div>
+              <div>
+                <div class="lit-title">Khan Academy · Time value of money</div>
+                <div class="lit-meta">khanacademy.org/economics-finance-domain/core-finance/interest-tutorial</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-nav reveal" style="--d:.1s">
+            <a class="sec-nav-btn" href="#cert">← Назад</a>
+            <a class="sec-nav-btn next" href="#final">Далее →</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- 17 ИТОГ -->
+      <section class="section" id="final">
+        <div class="container">
+          <div class="final-block reveal" style="--d:.05s">
+            <h2>Вывод<em>.</em></h2>
+            <p>
+              При ставке дисконтирования 15% и сроке 4 года будущий доход в размере 100 млн ₸
+              имеет текущую стоимость около <span class="accent-num">57,18 млн ₸</span>.
+            </p>
+            <p>
+              Дисконтирование позволяет привести будущие денежные потоки к текущему моменту
+              и учитывать временную стоимость денег, требуемую доходность и риск.
+            </p>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="footer">
+      <div class="container">PV = FV / (1 + r)ⁿ · Case 02 · 2026</div>
+    </footer>
+
+  </div><!-- /content -->
+</div><!-- /layout -->
+</div><!-- /app -->
+
+<button id="toTop" type="button" aria-label="Наверх">↑</button>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   КОНСТАНТЫ
+   ============================================================ */
+const BASE = { fv: 1e8, n: 4, r: 15 };
+const SENS_RATES = [5, 10, 15, 20];
+
+const fmtMoney = v => Math.round(v).toLocaleString('ru-RU') + ' ₸';
+const fmtMln   = v => (v / 1e6).toFixed(2).replace('.', ',') + ' млн ₸';
+const fmtNum   = v => Math.round(v).toLocaleString('ru-RU');
+const fmtFixed = (v, d) => v.toFixed(d).replace('.', ',');
+const clamp    = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function calcPV(fv, n, rPct){
+  const r = rPct / 100;
+  const factor = Math.pow(1 + r, n);
+  return { pv: fv / factor, factor };
+}
+function calcFV(pv, n, rPct){ return pv * Math.pow(1 + rPct / 100, n); }
+function calcRate(pv, fv, n){ return (Math.pow(fv / pv, 1 / n) - 1) * 100; }
+function calcN(pv, fv, rPct){ return Math.log(fv / pv) / Math.log(1 + rPct / 100); }
+
+/* ============================================================
+   URL ПАРАМЕТРЫ
+   ============================================================ */
+const params = new URLSearchParams(location.search);
+const urlFV = parseFloat(params.get('fv'));
+const urlN  = parseFloat(params.get('n'));
+const urlR  = parseFloat(params.get('r'));
+
+/* ============================================================
+   ТЕМА
+   ============================================================ */
+const themeToggle = document.getElementById('themeToggle');
+const savedTheme = localStorage.getItem('pv-theme');
+if (savedTheme) document.documentElement.setAttribute('data-theme', savedTheme);
+themeToggle.addEventListener('click', () => {
+  const cur = document.documentElement.getAttribute('data-theme');
+  const nxt = cur === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', nxt);
+  localStorage.setItem('pv-theme', nxt);
+  rebuildCharts(currentFV(), currentN(), currentR());
+});
+
+/* ============================================================
+   ОБЛОЖКА
+   ============================================================ */
+const cover = document.getElementById('cover');
+const app = document.getElementById('app');
+const startBtn = document.getElementById('startBtn');
+let started = false;
+
+function startSite(){
+  if (started) return;
+  started = true;
+  cover.classList.add('leaving');
+  app.hidden = false;
+  requestAnimationFrame(() => app.classList.add('entering'));
+  setTimeout(() => {
+    cover.style.display = 'none';
+    document.body.classList.remove('locked');
+    document.body.classList.add('ready');
+    window.scrollTo(0, 0);
+    initReveal();
+    initNavObserver();
+    initGrowthObserver();
+    rebuildCharts(currentFV(), currentN(), currentR());
+    updateChartMarker(currentR());
+  }, 580);
+}
+cover.addEventListener('click', startSite);
+startBtn.addEventListener('click', e => { e.stopPropagation(); startSite(); });
+cover.addEventListener('keydown', e => {
+  if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); startSite(); }
+});
+document.addEventListener('keydown', e => {
+  if (!started && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); startSite(); }
+});
+
+/* ============================================================
+   SIDEBAR (mobile drawer)
+   ============================================================ */
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const menuToggle = document.getElementById('menuToggle');
+
+function openSidebar(){
+  sidebar.classList.add('open');
+  sidebarOverlay.classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeSidebar(){
+  sidebar.classList.remove('open');
+  sidebarOverlay.classList.remove('show');
+  document.body.style.overflow = '';
+}
+menuToggle.addEventListener('click', openSidebar);
+sidebarOverlay.addEventListener('click', closeSidebar);
+
+/* ============================================================
+   ПЛАВНАЯ НАВИГАЦИЯ К СЕКЦИЯМ
+   ============================================================ */
+function scrollToSection(target){
+  const el = document.querySelector(target);
+  if (!el) return;
+  const top = el.getBoundingClientRect().top + window.scrollY;
+  window.scrollTo({ top, behavior: 'smooth' });
+}
+
+// Клик по ссылкам в sidebar
+document.querySelectorAll('.nav-link').forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const target = link.getAttribute('href');
+    scrollToSection(target);
+    if (window.innerWidth <= 900) closeSidebar();
+  });
+});
+
+// Клик по кнопкам back/next в секциях
+document.querySelectorAll('.sec-nav-btn[href]').forEach(btn => {
+  btn.addEventListener('click', e => {
+    e.preventDefault();
+    scrollToSection(btn.getAttribute('href'));
+  });
+});
+
+// ESC закрывает sidebar
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && sidebar.classList.contains('open')) closeSidebar();
+});
+
+/* ============================================================
+   REVEAL
+   ============================================================ */
+let revealObserver = null;
+function initReveal(){
+  const items = document.querySelectorAll('.reveal');
+  if (!('IntersectionObserver' in window)){
+    items.forEach(el => el.classList.add('visible'));
+    return;
+  }
+  revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting){
+        en.target.classList.add('visible');
+        revealObserver.unobserve(en.target);
+      }
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -20px 0px' });
+  items.forEach(el => revealObserver.observe(el));
+}
+
+/* ============================================================
+   АКТИВНАЯ ССЫЛКА
+   ============================================================ */
+function initNavObserver(){
+  const sections = document.querySelectorAll('.section');
+  const links = document.querySelectorAll('.nav-link');
+  if (!('IntersectionObserver' in window)) return;
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      if (en.isIntersecting){
+        const id = en.target.id;
+        links.forEach(link => {
+          const on = link.dataset.target === id;
+          link.classList.toggle('active', on);
+        });
+      }
+    });
+  }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+  sections.forEach(s => obs.observe(s));
+}
+
+/* ============================================================
+   ПРОГРЕСС + НАВЕРХ
+   ============================================================ */
+const progressBar = document.getElementById('progressBar');
+const toTopBtn = document.getElementById('toTop');
+function onScroll(){
+  const st = window.scrollY || document.documentElement.scrollTop;
+  const dh = document.documentElement.scrollHeight - window.innerHeight;
+  progressBar.style.width = (dh > 0 ? (st / dh) * 100 : 0) + '%';
+  toTopBtn.classList.toggle('show', st > 420);
+}
+window.addEventListener('scroll', onScroll, { passive: true });
+window.addEventListener('resize', onScroll);
+toTopBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+/* ============================================================
+   СКРЫТЬ/ПОКАЗАТЬ РЕШЕНИЕ
+   ============================================================ */
+const solSwitch = document.getElementById('solSwitch');
+const solLabel  = document.getElementById('solLabel');
+let solutionsVisible = true;
+
+function toggleSolutions(){
+  solutionsVisible = !solutionsVisible;
+  solSwitch.classList.toggle('on', solutionsVisible);
+  solSwitch.setAttribute('aria-checked', solutionsVisible);
+  solLabel.textContent = solutionsVisible
+    ? 'Показывать решение'
+    : 'Нажмите, чтобы показать шаг';
+  document.querySelectorAll('.hidden-solution').forEach(el => {
+    el.classList.toggle('hidden', !solutionsVisible);
+  });
+}
+solSwitch.addEventListener('click', toggleSolutions);
+solSwitch.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); toggleSolutions(); }
+});
+
+/* ============================================================
+   КАЛЬКУЛЯТОР
+   ============================================================ */
+const inFV = document.getElementById('inFV');
+const inPV = document.getElementById('inPV');
+const inN  = document.getElementById('inN');
+const inR  = document.getElementById('inR');
+const sliderN = document.getElementById('sliderN');
+const sliderR = document.getElementById('sliderR');
+const valN = document.getElementById('valN');
+const valR = document.getElementById('valR');
+
+const outLabel = document.getElementById('outLabel');
+const outValue = document.getElementById('outValue');
+const outSub = document.getElementById('outSub');
+const outFactor = document.getElementById('outFactor');
+const outFormula = document.getElementById('outFormula');
+const outDiscount = document.getElementById('outDiscount');
+const outEffective = document.getElementById('outEffective');
+const calcError = document.getElementById('calcError');
+const calcHint = document.getElementById('calcHint');
+
+let MODE = 'pv';
+
+if (isFinite(urlFV) && urlFV > 0) inFV.value = urlFV;
+if (isFinite(urlR)){ inR.value = urlR; sliderR.value = clamp(urlR, 0, 40); }
+if (isFinite(urlN)){ inN.value = urlN; sliderN.value = clamp(urlN, 1, 15); }
+
+document.querySelectorAll('.calc-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.calc-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    MODE = tab.dataset.mode;
+    updateFieldVisibility();
+    runCalculation();
+  });
+});
+
+function updateFieldVisibility(){
+  document.getElementById('fieldFV').style.display = (MODE === 'pv') ? '' : 'none';
+  document.getElementById('fieldPV').style.display = (MODE === 'pv') ? 'none' : '';
+  document.getElementById('fieldN').style.display  = (MODE === 'n') ? 'none' : '';
+  document.getElementById('fieldR').style.display  = (MODE === 'r') ? 'none' : '';
+}
+
+function showError(msg){ calcError.textContent = msg; calcError.classList.add('show'); }
+function hideError(){ calcError.classList.remove('show'); calcError.textContent = ''; }
+function showHint(msg){ calcHint.textContent = msg; calcHint.classList.add('show'); }
+function hideHint(){ calcHint.classList.remove('show'); calcHint.textContent = ''; }
+
+function syncSliderVisual(slider){
+  const min = parseFloat(slider.min), max = parseFloat(slider.max), v = parseFloat(slider.value);
+  slider.style.setProperty('--fill', ((v - min) / (max - min)) * 100 + '%');
+}
+
+function currentFV(){ const v = parseFloat(inFV.value); return isFinite(v) && v > 0 ? v : BASE.fv; }
+function currentN(){ const v = parseFloat(inN.value);  return isFinite(v) && v > 0 ? v : BASE.n; }
+function currentR(){ const v = parseFloat(inR.value);  return isFinite(v) ? v : BASE.r; }
+
+function runCalculation(){
+  hideError(); hideHint();
+
+  if (MODE === 'pv'){
+    const fv = parseFloat(inFV.value), n = parseFloat(inN.value), r = parseFloat(inR.value);
+    if (!isFinite(fv) || fv <= 0){ showError('FV должно быть положительным.'); return; }
+    if (!isFinite(n)  || n <= 0){ showError('Срок должен быть больше нуля.'); return; }
+    if (!isFinite(r)){ showError('Укажите ставку.'); return; }
+    if (r > 200){ showHint('Ставка выглядит необычно высокой. Возможно, имелось в виду 15%?'); }
+    const { pv, factor } = calcPV(fv, n, r);
+    outLabel.textContent = 'PV · текущая стоимость';
+    outValue.innerHTML = fmtMln(pv).replace(' млн ₸', '<em> млн</em> ₸');
+    outSub.textContent = fmtMoney(pv);
+    outFactor.textContent = fmtFixed(factor, 8);
+    outFormula.textContent = `${fmtNum(fv)} / (1+${fmtFixed(r/100, 4)})^${fmtFixed(n, 2)}`;
+    outDiscount.textContent = fmtMoney(fv - pv);
+    outEffective.textContent = fmtFixed(r, 4) + '%';
+    updateKPI(fv, n, r, pv, factor);
+
+  } else if (MODE === 'fv'){
+    const pv = parseFloat(inPV.value), n = parseFloat(inN.value), r = parseFloat(inR.value);
+    if (!isFinite(pv) || pv <= 0){ showError('PV должно быть положительным.'); return; }
+    if (!isFinite(n)  || n <= 0){ showError('Срок должен быть больше нуля.'); return; }
+    if (!isFinite(r)){ showError('Укажите ставку.'); return; }
+    const fv = calcFV(pv, n, r);
+    const factor = Math.pow(1 + r/100, n);
+    outLabel.textContent = 'FV · будущая стоимость';
+    outValue.innerHTML = fmtMln(fv).replace(' млн ₸', '<em> млн</em> ₸');
+    outSub.textContent = fmtMoney(fv);
+    outFactor.textContent = fmtFixed(factor, 8);
+    outFormula.textContent = `${fmtNum(pv)} · (1+${fmtFixed(r/100, 4)})^${fmtFixed(n, 2)}`;
+    outDiscount.textContent = fmtMoney(fv - pv);
+    outEffective.textContent = fmtFixed(r, 4) + '%';
+
+  } else if (MODE === 'r'){
+    const pv = parseFloat(inPV.value), fv = parseFloat(inFV.value), n = parseFloat(inN.value);
+    if (!isFinite(pv) || pv <= 0){ showError('PV должно быть положительным.'); return; }
+    if (!isFinite(fv) || fv <= 0){ showError('FV должно быть положительным.'); return; }
+    if (!isFinite(n)  || n <= 0){ showError('Срок должен быть больше нуля.'); return; }
+    if (fv <= pv){ showError('FV должно быть больше PV.'); return; }
+    const r = calcRate(pv, fv, n);
+    const factor = Math.pow(1 + r/100, n);
+    outLabel.textContent = 'r · ставка дисконтирования';
+    outValue.innerHTML = fmtFixed(r, 4) + '<em> %</em>';
+    outSub.textContent = `Точное значение: ${fmtFixed(r, 6)}%`;
+    outFactor.textContent = fmtFixed(factor, 8);
+    outFormula.textContent = `(${fmtNum(fv)} / ${fmtNum(pv)})^(1/${fmtFixed(n, 2)}) − 1`;
+    outDiscount.textContent = fmtMoney(fv - pv);
+    outEffective.textContent = fmtFixed(r, 4) + '%';
+    inR.value = r.toFixed(4);
+    sliderR.value = clamp(r, 0, 40);
+    syncSliderVisual(sliderR);
+    valR.textContent = fmtFixed(r, 2) + '%';
+
+  } else if (MODE === 'n'){
+    const pv = parseFloat(inPV.value), fv = parseFloat(inFV.value), r = parseFloat(inR.value);
+    if (!isFinite(pv) || pv <= 0){ showError('PV должно быть положительным.'); return; }
+    if (!isFinite(fv) || fv <= 0){ showError('FV должно быть положительным.'); return; }
+    if (!isFinite(r)  || r <= 0){ showError('Ставка должна быть положительной.'); return; }
+    if (fv <= pv){ showError('FV должно быть больше PV.'); return; }
+    const n = calcN(pv, fv, r);
+    const factor = Math.pow(1 + r/100, n);
+    outLabel.textContent = 'n · срок до получения';
+    outValue.innerHTML = fmtFixed(n, 4) + '<em> лет</em>';
+    outSub.textContent = `Точное значение: ${fmtFixed(n, 6)} лет`;
+    outFactor.textContent = fmtFixed(factor, 8);
+    outFormula.textContent = `ln(${fmtNum(fv)} / ${fmtNum(pv)}) / ln(1 + ${fmtFixed(r/100, 4)})`;
+    outDiscount.textContent = fmtMoney(fv - pv);
+    outEffective.textContent = fmtFixed(r, 4) + '%';
+    inN.value = n.toFixed(4);
+    sliderN.value = clamp(n, 1, 15);
+    syncSliderVisual(sliderN);
+    valN.textContent = fmtFixed(n, 2);
+  }
+
+  outValue.classList.remove('pop');
+  void outValue.offsetWidth;
+  outValue.classList.add('pop');
+  setTimeout(() => outValue.classList.remove('pop'), 320);
+
+  const cFV = currentFV(), cN = currentN(), cR = currentR();
+  rebuildSensitivity(cFV, cN);
+  rebuildAmort(cFV, cN, cR);
+  rebuildCompounding(cFV, cN, cR);
+  rebuildCharts(cFV, cN, cR);
+  updateChartMarker(cR);
+}
+
+function bindFS(field, slider){
+  field.addEventListener('input', () => {
+    slider.value = field.value; syncSliderVisual(slider); runCalculation();
+  });
+  slider.addEventListener('input', () => {
+    field.value = slider.value; syncSliderVisual(slider); runCalculation();
+  });
+}
+bindFS(inN, sliderN);
+bindFS(inR, sliderR);
+inFV.addEventListener('input', runCalculation);
+inPV.addEventListener('input', runCalculation);
+[inFV, inPV, inN, inR].forEach(inp =>
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter'){ e.preventDefault(); runCalculation(); }
+  })
+);
+
+document.getElementById('calcBtn').addEventListener('click', runCalculation);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  inFV.value = BASE.fv; inPV.value = 57175153;
+  inN.value = BASE.n; inR.value = BASE.r;
+  sliderN.value = BASE.n; sliderR.value = BASE.r;
+  syncSliderVisual(sliderN); syncSliderVisual(sliderR);
+  hideError(); hideHint();
+  runCalculation();
+});
+
+/* ============================================================
+   KPI
+   ============================================================ */
+function updateKPI(fv, n, r, pv, factor){
+  document.getElementById('kpiPV').textContent = fmtMln(pv);
+  document.getElementById('kpiFV').textContent = fmtMln(fv);
+  document.getElementById('kpiDisc').textContent = fmtMln(fv - pv);
+  document.getElementById('kpiFactor').textContent = fmtFixed(factor, 4);
+  document.getElementById('kpiRateN').textContent =
+    `${fmtFixed(r, 2).replace(/,00$/, '')}% · ${n} г.`;
+}
+
+/* ============================================================
+   ЧУВСТВИТЕЛЬНОСТЬ / АМОРТИЗАЦИЯ / ЧАСТОТЫ
+   ============================================================ */
+function rebuildSensitivity(fv, n){
+  const body = document.getElementById('sensBody');
+  let html = '';
+  SENS_RATES.forEach(rate => {
+    const { pv } = calcPV(fv, n, rate);
+    const main = rate === 15;
+    html += `<tr class="${main ? 'highlight' : ''}">
+      <td>${rate}%</td><td>${fmtFixed(pv/1e6, 2)}</td>
+    </tr>`;
+  });
+  body.innerHTML = html;
+}
+
+function rebuildAmort(fv, n, r){
+  const body = document.getElementById('amortBody');
+  let html = '', prev = null;
+  const steps = Math.max(1, Math.round(n));
+  for (let t = 0; t <= steps; t++){
+    const remaining = n - t;
+    const pv = fv / Math.pow(1 + r/100, remaining);
+    const delta = prev == null ? 0 : pv - prev;
+    html += `<tr>
+      <td>${t === 0 ? '0 (сегодня)' : 'Год ' + t}</td>
+      <td>${fmtFixed(pv/1e6, 2)}</td>
+      <td>${prev == null ? '—' : '+' + fmtFixed(delta/1e6, 2)}</td>
+    </tr>`;
+    prev = pv;
+  }
+  body.innerHTML = html;
+}
+
+function rebuildCompounding(fv, n, r){
+  const body = document.getElementById('compBody');
+  const rD = r / 100;
+  const rows = [
+    { label: 'Годовая (m=1)',     formula: '(1 + r)^n',        factor: Math.pow(1 + rD, n) },
+    { label: 'Полугодовая (m=2)', formula: '(1 + r/2)^(2n)',   factor: Math.pow(1 + rD/2, 2*n) },
+    { label: 'Квартальная (m=4)', formula: '(1 + r/4)^(4n)',   factor: Math.pow(1 + rD/4, 4*n) },
+    { label: 'Месячная (m=12)',   formula: '(1 + r/12)^(12n)', factor: Math.pow(1 + rD/12, 12*n) },
+    { label: 'Непрерывная',       formula: 'e^(r·n)',          factor: Math.exp(rD * n) }
+  ];
+  let html = '';
+  rows.forEach(row => {
+    const pv = fv / row.factor;
+    html += `<tr>
+      <td>${row.label}</td>
+      <td style="font-size:12.5px;color:var(--muted)">${row.formula}</td>
+      <td>${fmtFixed(row.factor, 6)}</td>
+      <td>${fmtFixed(pv/1e6, 3)}</td>
+    </tr>`;
+  });
+  body.innerHTML = html;
+}
+
+/* ============================================================
+   ГРАФИКИ
+   ============================================================ */
+const C = { W: 700, H: 340, l: 60, r: 24, t: 20, b: 48 };
+function niceMax(v){
+  if (v <= 20) return Math.ceil(v / 5) * 5;
+  if (v <= 100) return Math.ceil(v / 25) * 25;
+  return Math.ceil(v / 50) * 50;
+}
+
+function buildChartR(fv, n){
+  const svg = document.getElementById('chartR');
+  if (!svg) return;
+  const { W, H, l, r, t, b } = C;
+  const plotW = W - l - r, plotH = H - t - b;
+  const maxR = 0.30;
+  const xOf = rate => l + (rate / maxR) * plotW;
+  const maxV = Math.max(10, niceMax(fv / 1e6));
+  const yOf = v => t + (1 - v / maxV) * plotH;
+
+  const cs = getComputedStyle(document.documentElement);
+  const gridC = cs.getPropertyValue('--chart-grid').trim() || '#efeae0';
+  const gridSC = cs.getPropertyValue('--chart-grid-soft').trim() || '#f5f2ea';
+  const muted = cs.getPropertyValue('--muted-2').trim() || '#a8a49a';
+  const textC = cs.getPropertyValue('--muted').trim() || '#79756b';
+  const accent = cs.getPropertyValue('--accent').trim() || '#047857';
+
+  const curves = [
+    { r: 5,  color: '#047857' },
+    { r: 10, color: '#0891b2' },
+    { r: 15, color: '#b45309' },
+    { r: 20, color: '#9f1239' }
+  ];
+
+  let s = '';
+  for (let i = 0; i <= 5; i++){
+    const v = (maxV / 5) * i;
+    const y = yOf(v);
+    s += `<line x1="${l}" y1="${y}" x2="${W - r}" y2="${y}"
+      stroke="${i===0?gridC:gridSC}" stroke-width="1"/>`;
+    s += `<text x="${l-10}" y="${y+4}" text-anchor="end" fill="${muted}"
+      font-size="11" font-weight="600" font-family="JetBrains Mono,monospace">${Math.round(v)}</text>`;
+  }
+  for (let p = 0; p <= 30; p += 5){
+    const x = xOf(p / 100);
+    s += `<line x1="${x}" y1="${t}" x2="${x}" y2="${H - b}"
+      stroke="${gridSC}" stroke-width="1"/>`;
+    s += `<text x="${x}" y="${H - b + 20}" text-anchor="middle" fill="${muted}"
+      font-size="11" font-weight="600" font-family="JetBrains Mono,monospace">${p}%</text>`;
+  }
+  s += `<text x="${l + plotW/2}" y="${H - 8}" text-anchor="middle"
+    fill="${textC}" font-size="11.5" font-weight="600" font-family="Inter,sans-serif">Ставка дисконтирования</text>`;
+  s += `<text x="16" y="${t + plotH/2}" text-anchor="middle"
+    transform="rotate(-90 16 ${t + plotH/2})" fill="${textC}"
+    font-size="11.5" font-weight="600" font-family="Inter,sans-serif">PV, млн ₸</text>`;
+
+  curves.forEach(c => {
+    const pts = [];
+    for (let p = 0; p <= 30; p += 0.5){
+      const rate = p / 100;
+      const value = (fv / Math.pow(1 + rate, n)) / 1e6;
+      pts.push(xOf(rate).toFixed(1) + ',' + Math.min(yOf(value), H - b).toFixed(1));
+    }
+    const isMain = c.r === 15;
+    s += `<polyline points="${pts.join(' ')}" fill="none" stroke="${c.color}"
+      stroke-width="${isMain ? 2.5 : 1.8}" stroke-linejoin="round"
+      opacity="${isMain ? 1 : 0.7}"/>`;
+    const value = (fv / Math.pow(1 + c.r/100, n)) / 1e6;
+    if (value <= maxV){
+      const x = xOf(c.r / 100), y = yOf(value);
+      s += `<circle cx="${x}" cy="${y}" r="${isMain ? 5 : 3.5}"
+        fill="${c.color}" stroke="#fff" stroke-width="2"/>`;
+    }
+  });
+
+  s += `<g id="lmR" style="opacity:0;transition:opacity .25s">
+          <line id="lmRL" x1="0" y1="${t}" x2="0" y2="${H-b}"
+            stroke="${accent}" stroke-width="1.5" stroke-dasharray="4 4"/>
+          <circle id="lmRD" cx="0" cy="0" r="5" fill="${accent}"
+            stroke="#fff" stroke-width="2.5"/>
+        </g>`;
+  svg.innerHTML = s;
+}
+
+function buildChartN(fv, r){
+  const svg = document.getElementById('chartN');
+  if (!svg) return;
+  const { W, H, l, r: rt, t, b } = C;
+  const plotW = W - l - rt, plotH = H - t - b;
+  const maxN = 15;
+  const xOf = n => l + (n / maxN) * plotW;
+  const maxV = Math.max(10, niceMax(fv / 1e6));
+  const yOf = v => t + (1 - v / maxV) * plotH;
+
+  const cs = getComputedStyle(document.documentElement);
+  const gridC = cs.getPropertyValue('--chart-grid').trim();
+  const gridSC = cs.getPropertyValue('--chart-grid-soft').trim();
+  const muted = cs.getPropertyValue('--muted-2').trim();
+  const textC = cs.getPropertyValue('--muted').trim();
+  const accent = cs.getPropertyValue('--accent').trim();
+
+  let s = '';
+  for (let i = 0; i <= 5; i++){
+    const v = (maxV / 5) * i;
+    const y = yOf(v);
+    s += `<line x1="${l}" y1="${y}" x2="${W - rt}" y2="${y}"
+      stroke="${i===0?gridC:gridSC}" stroke-width="1"/>`;
+    s += `<text x="${l-10}" y="${y+4}" text-anchor="end" fill="${muted}"
+      font-size="11" font-weight="600" font-family="JetBrains Mono,monospace">${Math.round(v)}</text>`;
+  }
+  for (let n = 0; n <= maxN; n += 3){
+    const x = xOf(n);
+    s += `<line x1="${x}" y1="${t}" x2="${x}" y2="${H - b}"
+      stroke="${gridSC}" stroke-width="1"/>`;
+    s += `<text x="${x}" y="${H - b + 20}" text-anchor="middle" fill="${muted}"
+      font-size="11" font-weight="600" font-family="JetBrains Mono,monospace">${n}</text>`;
+  }
+  s += `<text x="${l + plotW/2}" y="${H - 8}" text-anchor="middle"
+    fill="${textC}" font-size="11.5" font-weight="600"
+    font-family="Inter,sans-serif">Срок, лет</text>`;
+  s += `<text x="16" y="${t + plotH/2}" text-anchor="middle"
+    transform="rotate(-90 16 ${t + plotH/2})" fill="${textC}"
+    font-size="11.5" font-weight="600" font-family="Inter,sans-serif">PV, млн ₸</text>`;
+
+  const pts = [];
+  for (let n = 0; n <= maxN; n += 0.2){
+    const value = (fv / Math.pow(1 + r/100, n)) / 1e6;
+    pts.push(xOf(n).toFixed(1) + ',' + Math.min(yOf(value), H - b).toFixed(1));
+  }
+  s += `<polyline points="${pts.join(' ')}" fill="none"
+    stroke="${accent}" stroke-width="2.5" stroke-linejoin="round"/>`;
+
+  const curN = currentN();
+  const curV = (fv / Math.pow(1 + r/100, curN)) / 1e6;
+  if (curV <= maxV){
+    const x = xOf(Math.min(curN, maxN)), y = yOf(curV);
+    s += `<circle cx="${x}" cy="${y}" r="5" fill="${accent}"
+      stroke="#fff" stroke-width="2.5"/>`;
+  }
+  svg.innerHTML = s;
+}
+
+function rebuildCharts(fv, n, r){
+  buildChartR(fv, n);
+  buildChartN(fv, r);
+}
+
+function updateChartMarker(ratePercent){
+  const g = document.getElementById('lmR');
+  if (!g) return;
+  const rate = ratePercent / 100;
+  if (!isFinite(rate) || rate < 0 || rate > 0.30){ g.style.opacity = 0; return; }
+
+  const fv = currentFV(), n = currentN();
+  const maxV = Math.max(10, niceMax(fv / 1e6));
+  const { W, H, l, r, t, b } = C;
+  const plotW = W - l - r, plotH = H - t - b;
+  const x = l + (rate / 0.30) * plotW;
+  const value = (fv / Math.pow(1 + rate, n)) / 1e6;
+  const y = t + (1 - Math.min(value, maxV) / maxV) * plotH;
+
+  const line = document.getElementById('lmRL');
+  const dot = document.getElementById('lmRD');
+  if (line){ line.setAttribute('x1', x); line.setAttribute('x2', x); }
+  if (dot){ dot.setAttribute('cx', x); dot.setAttribute('cy', y); }
+  g.style.opacity = 1;
+}
+
+/* ============================================================
+   РОСТ
+   ============================================================ */
+function buildGrowthBars(){
+  const container = document.getElementById('growthBars');
+  if (!container) return;
+  const { pv } = calcPV(BASE.fv, BASE.n, BASE.r);
+  let html = '';
+  for (let y = 0; y <= BASE.n; y++){
+    const value = pv * Math.pow(1 + BASE.r / 100, y);
+    const h = (value / BASE.fv) * 100;
+    const isFinal = y === BASE.n;
+    const delay = (y * 0.12) + 's';
+    html += `<div class="growth-bar-wrap">
+      <div class="growth-val" style="--delay:${delay}">${fmtFixed(value/1e6, 2)}</div>
+      <div class="growth-bar ${isFinal ? 'final' : ''}"
+        style="--h:${h}%;--delay:${delay}"></div>
+      <div class="growth-year">${y === 0 ? 'Сегодня' : 'Год ' + y}</div>
+    </div>`;
+  }
+  container.innerHTML = html;
+}
+function initGrowthObserver(){
+  const card = document.getElementById('growthCard');
+  if (!card) return;
+  if (!('IntersectionObserver' in window)){ card.classList.add('growth-visible'); return; }
+  const obs = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (e.isIntersecting){ card.classList.add('growth-visible'); obs.unobserve(card); }
+    });
+  }, { threshold: 0.25 });
+  obs.observe(card);
+}
+
+/* ============================================================
+   КЕЙСЫ
+   ============================================================ */
+const CASES = {
+  A: { fv: 1e8, n: 4, r: 15, comment: 'Основной сценарий кейса' },
+  B: { fv: 1e8, n: 4, r: 10, comment: 'Ставка снижена до 10% — PV выше, дисконт меньше' },
+  C: { fv: 1e8, n: 7, r: 15, comment: 'Срок увеличен до 7 лет — PV ниже, эффект времени сильнее' }
+};
+document.querySelectorAll('#caseSwitch button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#caseSwitch button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const c = CASES[btn.dataset.case];
+    const { pv } = calcPV(c.fv, c.n, c.r);
+    document.getElementById('caseFV').textContent = fmtMoney(c.fv);
+    document.getElementById('caseN').textContent = c.n + ' года';
+    document.getElementById('caseR').textContent = c.r + '%';
+    document.getElementById('casePV').innerHTML = fmtMln(pv).replace(' млн ₸', '<em> млн</em> ₸');
+    document.getElementById('caseComment').textContent = c.comment;
+  });
+});
+
+/* ============================================================
+   ТЕСТ
+   ============================================================ */
+const QUIZ = [
+  {
+    q: 'Что произойдёт с текущей стоимостью будущей суммы, если ставка дисконтирования увеличится?',
+    options: ['Текущая стоимость увеличится', 'Текущая стоимость уменьшится',
+      'Не изменится', 'Станет отрицательной'],
+    correct: 1,
+    explain: 'Чем выше ставка, тем сильнее будущая сумма «обесценивается» при приведении к сегодняшнему моменту.'
+  },
+  {
+    q: 'Чему равен коэффициент дисконтирования при r = 10% и n = 3 года?',
+    options: ['1,100', '1,210', '1,331', '1,500'],
+    correct: 2,
+    explain: '(1 + 0,10)³ = 1,1 × 1,1 × 1,1 = 1,331.'
+  },
+  {
+    q: 'Почему 100 млн ₸ сегодня и 100 млн ₸ через 4 года не равны?',
+    options: ['Из-за инфляции, риска и альтернативной доходности',
+      'Деньги обесценятся полностью', 'Банк заберёт часть', 'Это разные купюры'],
+    correct: 0,
+    explain: 'Деньги имеют временную стоимость: их можно инвестировать, они подвержены инфляции и риску.'
+  },
+  {
+    q: 'Что произойдёт с PV при увеличении срока получения денег (при прочих равных)?',
+    options: ['Увеличится', 'Уменьшится', 'Не изменится', 'Станет равной FV'],
+    correct: 1,
+    explain: 'Коэффициент (1+r)^n растёт с ростом n, значит PV = FV / (1+r)^n уменьшается.'
+  }
+];
+function buildQuiz(){
+  const container = document.getElementById('quizContainer');
+  if (!container) return;
+  let html = '';
+  QUIZ.forEach((item, idx) => {
+    html += `<div class="quiz-card reveal" style="--d:${(idx * 0.05).toFixed(2)}s">
+      <div class="quiz-q"><span class="qnum">${idx + 1}</span><span>${item.q}</span></div>
+      <div class="quiz-options">`;
+    item.options.forEach((opt, i) => {
+      html += `<button class="quiz-option" type="button" data-q="${idx}" data-i="${i}">
+        <span class="marker">${String.fromCharCode(65 + i)}</span>
+        <span>${opt}</span>
+      </button>`;
+    });
+    html += `</div><div class="quiz-explain" id="explain-${idx}">${item.explain}</div></div>`;
+  });
+  container.innerHTML = html;
+
+  let answered = 0, correct = 0;
+  container.querySelectorAll('.quiz-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const qi = parseInt(btn.dataset.q, 10);
+      const oi = parseInt(btn.dataset.i, 10);
+      const item = QUIZ[qi];
+      const card = btn.closest('.quiz-card');
+      if (card.dataset.done) return;
+      card.dataset.done = '1';
+      const opts = card.querySelectorAll('.quiz-option');
+      opts.forEach((b, i) => {
+        b.disabled = true;
+        if (i === item.correct) b.classList.add('correct');
+        else if (i === oi)      b.classList.add('wrong');
+      });
+      const ex = document.getElementById('explain-' + qi);
+      if (ex) ex.classList.add('show');
+      if (oi === item.correct) correct++;
+      answered++;
+      if (answered === QUIZ.length){
+        const sc = document.getElementById('quizScore');
+        sc.classList.add('show');
+        const verdict =
+          correct === QUIZ.length ? 'Отлично! Вы полностью разобрались в теме.' :
+          correct >= 3 ? 'Хороший результат, но есть что повторить.' :
+          correct >= 2 ? 'Стоит перечитать разделы о дисконтировании.' :
+          'Рекомендуем вернуться к началу и пройти материал заново.';
+        sc.innerHTML = `Правильных ответов: <b>${correct} / ${QUIZ.length}</b><br>${verdict}`;
+      }
+    });
+  });
+}
+
+/* ============================================================
+   ИСТОРИЯ
+   ============================================================ */
+const HKEY = 'pv-history';
+function loadHistory(){
+  try { return JSON.parse(localStorage.getItem(HKEY)) || []; } catch(e){ return []; }
+}
+function saveHistory(list){
+  localStorage.setItem(HKEY, JSON.stringify(list));
+  renderHistory();
+}
+function renderHistory(){
+  const list = loadHistory();
+  const el = document.getElementById('historyList');
+  if (!list.length){
+    el.innerHTML = `<div class="history-empty">Пока нет сохранённых расчётов</div>`;
+    return;
+  }
+  el.innerHTML = list.map((h, i) => `
+    <div class="history-item">
+      <div>
+        <div class="history-params">FV ${fmtNum(h.fv)} · n ${h.n} · r ${h.r}%</div>
+        <div class="history-result">${h.label} = ${fmtMln(h.result)}</div>
+      </div>
+      <button class="history-remove" data-idx="${i}" aria-label="Удалить">×</button>
+    </div>`).join('');
+  el.querySelectorAll('.history-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const list = loadHistory();
+      list.splice(parseInt(btn.dataset.idx, 10), 1);
+      saveHistory(list);
+    });
+  });
+}
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const fv = currentFV(), n = currentN(), r = currentR();
+  const { pv } = calcPV(fv, n, r);
+  const list = loadHistory();
+  list.unshift({ fv, n, r, result: pv, label: 'PV', ts: Date.now() });
+  if (list.length > 20) list.length = 20;
+  saveHistory(list);
+  showToast('Расчёт добавлен в историю');
+});
+renderHistory();
+
+/* ============================================================
+   TOOLS
+   ============================================================ */
+function showToast(msg){
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => el.classList.remove('show'), 2200);
+}
+async function copyText(text, msg){
+  try {
+    await navigator.clipboard.writeText(text);
+    showToast(msg || 'Скопировано');
+  } catch(e){ showToast('Не удалось скопировать'); }
+}
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const fv = currentFV(), n = currentN(), r = currentR();
+  const { pv } = calcPV(fv, n, r);
+  copyText(`PV = ${fmtMoney(pv)} (${fmtMln(pv)}) при FV = ${fmtNum(fv)} ₸, n = ${n}, r = ${r}%`,
+    'Результат скопирован');
+});
+document.getElementById('texBtn').addEventListener('click', () => {
+  const fv = currentFV(), n = currentN(), r = currentR();
+  const { pv } = calcPV(fv, n, r);
+  const tex = `PV = \\frac{FV}{(1+r)^n} = \\frac{${fmtNum(fv)}}{(1+${(r/100).toFixed(4)})^{${n}}} \\approx ${Math.round(pv)} \\text{ ₸}`;
+  copyText(tex, 'LaTeX скопирован');
+});
+document.getElementById('csvBtn').addEventListener('click', () => {
+  const fv = currentFV(), n = currentN();
+  let csv = 'Ставка,PV\n';
+  SENS_RATES.forEach(rate => {
+    const { pv } = calcPV(fv, n, rate);
+    csv += `${rate},${Math.round(pv)}\n`;
+  });
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'pv-sensitivity.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('CSV загружен');
+});
+document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+/* ============================================================
+   СЕРТИФИКАТ
+   ============================================================ */
+const certName = document.getElementById('certName');
+const certPreviewName = document.getElementById('certPreviewName');
+certName.addEventListener('input', () => {
+  certPreviewName.textContent = certName.value || '—';
+});
+document.getElementById('certDate').textContent = new Date().getFullYear();
+document.getElementById('certPrint').addEventListener('click', () => window.print());
+
+/* ============================================================
+   ИНИЦИАЛИЗАЦИЯ
+   ============================================================ */
+updateFieldVisibility();
+buildQuiz();
+buildGrowthBars();
+runCalculation();
+onScroll();
+syncSliderVisual(sliderN);
+syncSliderVisual(sliderR);
+valN.textContent = inN.value;
+valR.textContent = fmtFixed(parseFloat(inR.value), 2) + '%';
+</script>
+</body>
+</html>
